@@ -602,6 +602,18 @@
             font-family: "Courier New", monospace;
         }
         
+        .results-footer {
+            margin-top: 5px;
+            padding-top: 5px;
+            border-top: 1px dashed rgba(30, 48, 80, 0.3);
+            justify-content: center;
+        }
+        
+        .results-note {
+            font-size: 12px;
+            font-style: italic;
+        }
+        
         /* For debugging */
         .debug-output {
             width: 100%;
@@ -818,6 +830,13 @@ def create_grid():
                         <div class="results-row">
                             <div class="results-label">Cell Match %</div>
                             <div class="results-value" id="match-percentage">0.00%</div>
+                        </div>
+                        <div class="results-row">
+                            <div class="results-label">Code Length</div>
+                            <div class="results-value" id="code-length">0 tokens</div>
+                        </div>
+                        <div class="results-row results-footer">
+                            <div class="results-note">💡 Shorter code is better!</div>
                         </div>
                     </div>
                 </div>
@@ -1336,6 +1355,7 @@ def create_grid():
                 document.getElementById('match-percentage').textContent = "0.00%";
                 document.getElementById('size-match').textContent = "✓";
                 document.getElementById('size-match').style.color = "var(--button-color)";
+                document.getElementById('code-length').textContent = "0 tokens";
                 
                 // Update the debug output with task type info
                 debugOutput.textContent = `${task.type} task ${taskId} loaded. Try to create this grid with your code!`;
@@ -1370,6 +1390,9 @@ def create_grid():
                 pyodide = await loadPyodide();
                 await pyodide.loadPackage('numpy');
                 
+                // Initialize the code length measurement
+                await initializeCodeMeasurement();
+                
                 loadingOverlay.classList.remove('active');
                 debugOutput.textContent = "Python environment ready!";
                 
@@ -1379,6 +1402,49 @@ def create_grid():
                 debugOutput.textContent = `Error initializing Python: ${error.message}`;
                 loadingOverlay.classList.remove('active');
                 return false;
+            }
+        }
+        
+        // Initialize the Python code for measuring code length
+        async function initializeCodeMeasurement() {
+            // Load the ast module for code analysis
+            await pyodide.runPython(`
+                import ast
+
+                class SimpleTokenCounter(ast.NodeVisitor):
+                    def __init__(self):
+                        self.count = 0
+
+                    def generic_visit(self, node):
+                        # Increment count for each relevant node type
+                        if isinstance(node, (ast.FunctionDef, ast.ClassDef, ast.Name, ast.arg,
+                                             ast.Import, ast.ImportFrom, ast.Constant, ast.Attribute,
+                                             ast.BinOp, ast.Compare, ast.If, ast.For, ast.While, 
+                                             ast.Return, ast.Call)):
+                            self.count += 1
+                        super().generic_visit(node)
+
+                def measure_code_length(code):
+                    try:
+                        tree = ast.parse(code)
+                        counter = SimpleTokenCounter()
+                        counter.visit(tree)
+                        return counter.count
+                    except SyntaxError:
+                        # Return a large number if there's a syntax error
+                        return 9999
+            `);
+        }
+        
+        // Function to measure the code length
+        function measureCodeLength(code) {
+            try {
+                // Use the Python function to measure code length
+                const length = pyodide.runPython(`measure_code_length(${JSON.stringify(code)})`);
+                return length;
+            } catch (error) {
+                console.error('Error measuring code length:', error);
+                return 0;
             }
         }
         
@@ -1441,6 +1507,10 @@ def create_grid():
                 
                 // Update similarity score
                 updateSimilarityScore(gridData);
+                
+                // Measure and update code length
+                const codeLength = measureCodeLength(code);
+                document.getElementById('code-length').textContent = `${codeLength} tokens`;
                 
                 debugOutput.textContent = `Code executed successfully! Generated grid size: ${gridData.length}x${gridData[0].length}`;
             } catch (error) {
