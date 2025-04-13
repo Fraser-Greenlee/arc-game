@@ -144,6 +144,32 @@
         }
         
         /* Grid Container */
+        .grid-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .grid-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .grid-title {
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            color: var(--title-color);
+            background-color: var(--header-bg);
+            padding: 5px 10px;
+            width: 100%;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+        
         .grid-wrapper {
             position: relative;
             width: 340px;
@@ -151,7 +177,6 @@
             background-color: var(--grid-bg);
             border: 1px solid var(--border-color);
             padding: 30px 0 0 30px; /* Space for axes */
-            margin-bottom: 20px;
         }
         
         .grid-inner {
@@ -381,22 +406,13 @@
         }
         
         /* Run button */
-        .run-button-container {
-            margin-top: 10px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: center;
-            width: 100%;
-            position: relative;
-        }
-        
         .run-button {
             background-color: var(--button-color);
             color: var(--bg-color);
             border: 1px solid var(--border-color);
-            padding: 10px 40px;
+            padding: 6px 20px;
             font-family: "Courier New", monospace;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
             text-transform: uppercase;
             cursor: pointer;
@@ -523,6 +539,44 @@
             margin-right: 10px;
         }
         
+        /* Results panel */
+        .results-panel {
+            width: 100%;
+            max-width: 340px;
+            background-color: var(--panel-bg);
+            color: var(--label-color);
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        
+        .results-header {
+            background-color: var(--header-bg);
+            color: var(--title-color);
+            padding: 5px 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .results-content {
+            padding: 10px;
+        }
+        
+        .results-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(30, 48, 80, 0.2);
+        }
+        
+        .results-label {
+            font-weight: bold;
+        }
+        
+        .results-value {
+            font-family: "Courier New", monospace;
+        }
+        
         /* For debugging */
         .debug-output {
             width: 100%;
@@ -550,35 +604,15 @@
         }
         
         /* Task Selector */
-        .task-selector {
+        .task-select-header {
             width: 100%;
-            max-width: 340px;
-            margin-bottom: 20px;
-            background-color: var(--panel-bg);
-            color: var(--label-color);
-            border: 1px solid var(--border-color);
-        }
-        
-        .task-selector-title {
-            background-color: var(--header-bg);
-            color: var(--title-color);
-            padding: 5px 10px;
-            font-size: 14px;
-            text-transform: uppercase;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .task-selector-content {
-            padding: 10px;
-        }
-        
-        .task-selector select {
-            width: 100%;
-            padding: 8px;
-            background-color: var(--bg-color);
+            padding: 6px 10px;
+            background-color: var(--editor-header);
             color: var(--text-color);
             border: 1px solid var(--border-color);
             font-family: "Courier New", monospace;
+            font-size: 14px;
+            text-transform: uppercase;
         }
         
         /* Resizer */
@@ -626,20 +660,35 @@
         <!-- Editor Panel -->
         <div class="editor-panel">
             <div class="editor-header">
-                <div class="editor-title">PYTHON CODE EDITOR</div>
+                <button class="run-button" id="run-button">RUN</button>
             </div>
             <div class="editor-container">
                 <div id="editor">import numpy as np
 
 # This function will be called when you click RUN
-# It should return a 2D grid (list of lists of integers)
+# It should return a list of lists of integers representing the grid
+# Color guide:
+# 0 = BLACK, 1 = BLUE, 2 = RED, 3 = GREEN, 4 = YELLOW
+# 5 = GRAY, 6 = PINK, 7 = ORANGE, 8 = TEAL, 9 = MAGENTA
+
 def create_grid():
-    # Example: Create a simple checkerboard pattern
+    # Get the dimensions from the sample ARC task
+    rows, cols = 3, 3  # Default size, modify as needed
+    
+    # Initialize empty grid
     grid = []
-    for i in range(3):
+    
+    # Fill the grid with the pattern from the current task
+    for i in range(rows):
         row = []
-        for j in range(3):
-            row.append((i + j) % 2)  # Alternates between 0 and 1
+        for j in range(cols):
+            # Example pattern: diagonal with different colors
+            if i == j:
+                row.append(7)  # ORANGE on main diagonal
+            elif i > j:
+                row.append(1)  # BLUE below diagonal
+            else:
+                row.append(2)  # RED above diagonal
         grid.append(row)
     
     return grid
@@ -653,61 +702,95 @@ def create_grid():
         <!-- Grid Viewer Panel -->
         <div class="grid-panel">
             <div class="grid-header">
-                <div class="grid-title">GRID VIEWER</div>
+                <select id="task-select" class="task-select-header">
+                    <!-- Will be populated dynamically -->
+                </select>
             </div>
             <div class="grid-content">
-                <!-- Task Selector -->
-                <div class="task-selector">
-                    <div class="task-selector-title">SELECT A TASK</div>
-                    <div class="task-selector-content">
-                        <select id="task-select">
-                            <!-- Will be populated dynamically -->
-                        </select>
+                
+                <!-- Grid Container -->
+                <div class="grid-container">
+                    <!-- Your Result Grid -->
+                    <div class="grid-section">
+                        <div class="grid-title">YOUR RESULT</div>
+                        <div class="grid-wrapper">
+                            <!-- Loading overlay -->
+                            <div class="loading-overlay" id="loading-overlay">
+                                <div class="loading-spinner"></div>
+                            </div>
+                            
+                            <div class="grid-inner">
+                                <!-- Origin marker and label -->
+                                <div class="origin-marker"></div>
+                                <div class="origin-label">0</div>
+                                
+                                <!-- Axis names -->
+                                <div class="axis-name x-name">X</div>
+                                <div class="axis-name y-name">Y</div>
+                                
+                                <!-- Axis arrows -->
+                                <div class="x-arrow-right"></div>
+                                <div class="y-arrow-down"></div>
+                                
+                                <!-- Axis labels and ticks -->
+                                <div class="axis-labels x-labels" id="result-x-labels"></div>
+                                <div class="axis-labels y-labels" id="result-y-labels"></div>
+                                
+                                <!-- Grid -->
+                                <div class="grid" id="result-grid"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Target Grid -->
+                    <div class="grid-section">
+                        <div class="grid-title">TARGET GRID</div>
+                        <div class="grid-wrapper">
+                            <div class="grid-inner">
+                                <!-- Origin marker and label -->
+                                <div class="origin-marker"></div>
+                                <div class="origin-label">0</div>
+                                
+                                <!-- Axis names -->
+                                <div class="axis-name x-name">X</div>
+                                <div class="axis-name y-name">Y</div>
+                                
+                                <!-- Axis arrows -->
+                                <div class="x-arrow-right"></div>
+                                <div class="y-arrow-down"></div>
+                                
+                                <!-- Axis labels and ticks -->
+                                <div class="axis-labels x-labels" id="target-x-labels"></div>
+                                <div class="axis-labels y-labels" id="target-y-labels"></div>
+                                
+                                <!-- Grid -->
+                                <div class="grid" id="target-grid"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
-                <!-- Target Grid -->
-                <div class="grid-wrapper">
-                    <!-- Loading overlay -->
-                    <div class="loading-overlay" id="loading-overlay">
-                        <div class="loading-spinner"></div>
-                    </div>
-                    
-                    <div class="grid-inner">
-                        <!-- Origin marker and label -->
-                        <div class="origin-marker"></div>
-                        <div class="origin-label">0</div>
-                        
-                        <!-- Axis names -->
-                        <div class="axis-name x-name">X</div>
-                        <div class="axis-name y-name">Y</div>
-                        
-                        <!-- Axis arrows -->
-                        <div class="x-arrow-right"></div>
-                        <div class="y-arrow-down"></div>
-                        
-                        <!-- Axis labels and ticks -->
-                        <div class="axis-labels x-labels" id="target-x-labels"></div>
-                        <div class="axis-labels y-labels" id="target-y-labels"></div>
-                        
-                        <!-- Grid -->
-                        <div class="grid" id="target-grid"></div>
+                <!-- Comparison Results -->
+                <div class="results-panel">
+                    <div class="results-header">COMPARISON RESULTS</div>
+                    <div class="results-content">
+                        <div class="results-row">
+                            <div class="results-label">Match Percentage</div>
+                            <div class="results-value" id="match-percentage">0.00%</div>
+                        </div>
                     </div>
                 </div>
                 
                 <!-- Color Key -->
                 <div class="color-key">
-                    <div class="key-title">COLOR MAPPING</div>
+                    <div class="key-title">COLOR MAPPING (0-9)</div>
                     <div class="key-content" id="color-key-container">
                         <!-- Color keys will be added dynamically -->
                     </div>
                 </div>
                 
-                <!-- Run button -->
-                <div class="run-button-container">
-                    <div class="status-indicator" id="status-indicator">RUNNING PYTHON CODE...</div>
-                    <button class="run-button" id="run-button">RUN</button>
-                </div>
+                <!-- Status indicator - only kept this -->
+                <div class="status-indicator" id="status-indicator">RUNNING PYTHON CODE...</div>
                 
                 <!-- Debug output -->
                 <div class="debug-output" id="debug-output"></div>
@@ -718,18 +801,18 @@ def create_grid():
     <div class="version-label">ARC Grid Challenge v1.0</div>
 
     <script>
-        // Scientific calculator style color mapping
+        // Updated color mapping
         const COLOR_MAP = {
-            0: 'var(--pixel-white)',   // White
-            1: 'var(--pixel-black)',   // Black
-            2: 'var(--pixel-red)',     // Red
-            3: 'var(--pixel-blue)',    // Blue
-            4: 'var(--pixel-green)',   // Green
-            5: 'var(--pixel-yellow)',  // Yellow
-            6: 'var(--pixel-magenta)', // Magenta
-            7: 'var(--pixel-cyan)',    // Cyan
-            8: '#a0a0a0',              // Gray
-            9: '#ff8000'               // Orange
+            0: '#000000',    // BLACK
+            1: '#0000FF',    // BLUE
+            2: '#FF0000',    // RED
+            3: '#00FF00',    // GREEN
+            4: '#FFFF00',    // YELLOW
+            5: '#808080',    // GRAY
+            6: '#FFC0CB',    // PINK
+            7: '#FFA500',    // ORANGE
+            8: '#008080',    // TEAL
+            9: '#FF00FF'     // MAGENTA
         };
         
         // Global variables
@@ -900,17 +983,69 @@ def create_grid():
             });
         }
         
+        // Calculate similarity between grids
+        function calculateSimilarity(grid1, grid2) {
+            if (!grid1 || !grid2 || grid1.length === 0 || grid2.length === 0) {
+                return 0;
+            }
+            
+            // If grids have different dimensions, either trim or expand the result grid
+            const resultGrid = [...grid1]; // Make a copy to avoid modifying the original
+            const targetRows = grid2.length;
+            const targetCols = grid2[0].length;
+            
+            // Resize resultGrid to match target dimensions if needed
+            // This ensures we can compare grids of different sizes
+            while (resultGrid.length < targetRows) {
+                resultGrid.push(Array(resultGrid[0].length).fill(0));
+            }
+            if (resultGrid.length > targetRows) {
+                resultGrid.length = targetRows;
+            }
+            
+            for (let i = 0; i < resultGrid.length; i++) {
+                while (resultGrid[i].length < targetCols) {
+                    resultGrid[i].push(0);
+                }
+                if (resultGrid[i].length > targetCols) {
+                    resultGrid[i].length = targetCols;
+                }
+            }
+            
+            // Now count matches
+            let matches = 0;
+            let total = 0;
+            
+            for (let y = 0; y < targetRows; y++) {
+                for (let x = 0; x < targetCols; x++) {
+                    total++;
+                    if (resultGrid[y][x] === grid2[y][x]) {
+                        matches++;
+                    }
+                }
+            }
+            
+            return (matches / total) * 100;
+        }
+        
+        // Update similarity score display
+        function updateSimilarityScore(userGrid) {
+            if (!currentTask || !userGrid) return;
+            
+            const targetGrid = currentTask.train[0].input;
+            const score = calculateSimilarity(userGrid, targetGrid);
+            document.getElementById('match-percentage').textContent = `${score.toFixed(2)}%`;
+        }
+        
         // Load the task list
         async function loadTaskList() {
             try {
-                // First try the training data
-                const trainingResponse = await fetch('/data/training/');
+                // For demonstration, we'll just load tasks from disk
+                const trainingFiles = [
+                    "007bbfb7.json", "00d62c1b.json", "017c7c7b.json", "025d127b.json", 
+                    "045e512c.json", "0520fde7.json", "05269061.json", "05f2a901.json"
+                ];
                 
-                if (!trainingResponse.ok) {
-                    throw new Error('Failed to load task list');
-                }
-                
-                const trainingFiles = await trainingResponse.json();
                 taskList = trainingFiles.map(file => ({
                     id: file.replace('.json', ''),
                     path: `/data/training/${file}`,
@@ -942,7 +1077,7 @@ def create_grid():
             }
         }
         
-        // Alternative method to fetch a single task directly
+        // Load a specific task
         async function loadTask(taskId) {
             const debugOutput = document.getElementById('debug-output');
             debugOutput.textContent = `Loading task ${taskId}...`;
@@ -968,6 +1103,14 @@ def create_grid():
                 createAxisLabels(grid, 'target-x-labels', 'target-y-labels');
                 renderGrid(grid, 'target-grid');
                 
+                // Initialize result grid with empty grid of same size
+                const emptyResultGrid = Array(grid.length).fill().map(() => Array(grid[0].length).fill(0));
+                createAxisLabels(emptyResultGrid, 'result-x-labels', 'result-y-labels');
+                renderGrid(emptyResultGrid, 'result-grid');
+                
+                // Reset match percentage
+                document.getElementById('match-percentage').textContent = "0.00%";
+                
                 debugOutput.textContent = `Task ${taskId} loaded. Try to create this grid with your code!`;
             } catch (error) {
                 console.error('Error loading task:', error);
@@ -981,6 +1124,10 @@ def create_grid():
                 ];
                 createAxisLabels(fallbackGrid, 'target-x-labels', 'target-y-labels');
                 renderGrid(fallbackGrid, 'target-grid');
+                
+                // Empty result grid
+                createAxisLabels(fallbackGrid, 'result-x-labels', 'result-y-labels');
+                renderGrid(Array(3).fill().map(() => Array(3).fill(0)), 'result-grid');
             }
         }
         
@@ -1062,8 +1209,11 @@ def create_grid():
                 }
                 
                 // Update the grid visualization
-                createAxisLabels(gridData, 'target-x-labels', 'target-y-labels');
-                renderGridWithPopAnimation(gridData, 'target-grid');
+                createAxisLabels(gridData, 'result-x-labels', 'result-y-labels');
+                renderGridWithPopAnimation(gridData, 'result-grid');
+                
+                // Update similarity score
+                updateSimilarityScore(gridData);
                 
                 debugOutput.textContent = `Code executed successfully! Generated grid size: ${gridData.length}x${gridData[0].length}`;
             } catch (error) {
