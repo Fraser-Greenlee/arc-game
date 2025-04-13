@@ -1624,8 +1624,8 @@ class Line(BaseDrawer):
                 pyodide = await loadPyodide();
                 await pyodide.loadPackage(['numpy', 'micropip']);
                 
-                // Install pydantic
-                await pyodide.runPython(`
+                // Install pydantic using runPythonAsync which handles top-level await
+                await pyodide.runPythonAsync(`
                     import micropip
                     await micropip.install('pydantic')
                 `);
