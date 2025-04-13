@@ -812,7 +812,11 @@ def create_grid():
                     <div class="results-header">COMPARISON RESULTS</div>
                     <div class="results-content">
                         <div class="results-row">
-                            <div class="results-label">Match Percentage</div>
+                            <div class="results-label">Size Match</div>
+                            <div class="results-value" id="size-match">✓</div>
+                        </div>
+                        <div class="results-row">
+                            <div class="results-label">Cell Match %</div>
                             <div class="results-value" id="match-percentage">0.00%</div>
                         </div>
                     </div>
@@ -1137,43 +1141,32 @@ def create_grid():
             });
         }
         
-        // Calculate similarity between grids
-        function calculateSimilarity(grid1, grid2) {
+        // Check if two grids have the same dimensions
+        function isSameDimensions(grid1, grid2) {
             if (!grid1 || !grid2 || grid1.length === 0 || grid2.length === 0) {
+                return false;
+            }
+            
+            return grid1.length === grid2.length && grid1[0].length === grid2[0].length;
+        }
+        
+        // Calculate similarity between grids - only counts exact matches
+        function calculateSimilarity(userGrid, targetGrid) {
+            if (!userGrid || !targetGrid || userGrid.length === 0 || targetGrid.length === 0) {
                 return 0;
             }
             
-            // If grids have different dimensions, either trim or expand the result grid
-            const resultGrid = [...grid1]; // Make a copy to avoid modifying the original
-            const targetRows = grid2.length;
-            const targetCols = grid2[0].length;
+            // We'll compare within the intersection of the two grids
+            const rows = Math.min(userGrid.length, targetGrid.length);
+            const cols = Math.min(userGrid[0].length, targetGrid[0].length);
             
-            // Resize resultGrid to match target dimensions if needed
-            // This ensures we can compare grids of different sizes
-            while (resultGrid.length < targetRows) {
-                resultGrid.push(Array(resultGrid[0].length).fill(0));
-            }
-            if (resultGrid.length > targetRows) {
-                resultGrid.length = targetRows;
-            }
-            
-            for (let i = 0; i < resultGrid.length; i++) {
-                while (resultGrid[i].length < targetCols) {
-                    resultGrid[i].push(0);
-                }
-                if (resultGrid[i].length > targetCols) {
-                    resultGrid[i].length = targetCols;
-                }
-            }
-            
-            // Now count matches
+            // Count matches in the intersection area
             let matches = 0;
-            let total = 0;
+            let total = rows * cols;
             
-            for (let y = 0; y < targetRows; y++) {
-                for (let x = 0; x < targetCols; x++) {
-                    total++;
-                    if (resultGrid[y][x] === grid2[y][x]) {
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    if (userGrid[y][x] === targetGrid[y][x]) {
                         matches++;
                     }
                 }
@@ -1201,6 +1194,19 @@ def create_grid():
                 return; // No valid target grid
             }
             
+            // Update the size match indicator
+            const sizeMatchElement = document.getElementById('size-match');
+            if (isSameDimensions(userGrid, targetGrid)) {
+                sizeMatchElement.textContent = "✓"; // Checkmark symbol
+                sizeMatchElement.style.color = "var(--button-color)"; // Green color
+            } else {
+                const userSize = `${userGrid.length}x${userGrid[0].length}`;
+                const targetSize = `${targetGrid.length}x${targetGrid[0].length}`;
+                sizeMatchElement.textContent = `✗ Got ${userSize}, need ${targetSize}`;
+                sizeMatchElement.style.color = "var(--pixel-red)"; // Red color
+            }
+            
+            // Calculate and update the match percentage
             const score = calculateSimilarity(userGrid, targetGrid);
             document.getElementById('match-percentage').textContent = `${score.toFixed(2)}%`;
         }
@@ -1326,8 +1332,10 @@ def create_grid():
                 createAxisLabels(emptyResultGrid, 'result-x-labels', 'result-y-labels');
                 renderGrid(emptyResultGrid, 'result-grid');
                 
-                // Reset match percentage
+                // Reset match indicators
                 document.getElementById('match-percentage').textContent = "0.00%";
+                document.getElementById('size-match').textContent = "✓";
+                document.getElementById('size-match').style.color = "var(--button-color)";
                 
                 // Update the debug output with task type info
                 debugOutput.textContent = `${task.type} task ${taskId} loaded. Try to create this grid with your code!`;
