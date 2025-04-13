@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pyxel Playground</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ace.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/kitao/pyxel/wasm/pyxel.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      height: 100vh;
+      font-family: "Press Start 2P", serif;
+      font-weight: 400;
+      font-style: normal;
+    }
+
+    .container {
+      height: 100vh;
+      display: flex;
+      gap: 0;
+      padding: 4px;
+      background: #1e1e1e;
+      position: relative;
+    }
+    
+    .resizer {
+      width: 8px;
+      height: 100%;
+      background: #333;
+      cursor: col-resize;
+      transition: background 0.2s;
+      margin: 0 4px;
+      z-index: 10;
+    }
+    
+    .resizer:hover {
+      background: #555;
+    }
+    
+    .resizer.active {
+      background: #4CAF50;
+    }
+
+    .editor-panel {
+      display: flex;
+      flex-direction: column;
+      background: #1e1e1e;
+      overflow: hidden;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .editor-header {
+      display: flex;
+      background: #2d2d2d;
+      border-bottom: 1px solid #333;
+      padding: 8px 16px;
+    }
+
+    .editor-title {
+      color: #fff;
+      font-family: "Press Start 2P", serif;
+      font-size: 10px;
+    }
+
+    .editor-actions {
+      display: flex;
+      background: #2d2d2d;
+      padding: 4px;
+      gap: 8px;
+      border-bottom: 1px solid #333;
+      justify-content: space-between;
+    }
+    
+    .spacer {
+      flex-grow: 1;
+    }
+    
+    .examples-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: #333;
+      min-width: 200px;
+      max-height: 400px;
+      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
+      z-index: 100;
+      border-radius: 4px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    
+    .examples-dropdown:hover .dropdown-content {
+      display: block;
+    }
+    
+    .dropdown-content a {
+      color: white;
+      padding: 12px 16px;
+      text-decoration: none;
+      display: block;
+      font-size: 10px;
+      text-align: left;
+      transition: background-color 0.2s;
+    }
+    
+    .dropdown-content a:hover {
+      background-color: #444;
+    }
+
+    .action-button {
+      padding: 8px 12px;
+      background: #444;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: "Press Start 2P", serif;
+      font-size: 10px;
+      transition: background 0.2s;
+    }
+
+    .action-button:hover {
+      background: #555;
+    }
+
+    .editor-container {
+      position: relative;
+      flex-grow: 1;
+    }
+    
+    #editor {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      background: #2d2d2d;
+      border-radius: 4px;
+      overflow: hidden;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .tab-content {
+      display: flex;
+      flex-grow: 1;
+      height: 100%;
+    }
+
+    canvas {
+      background: #000;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    #game-content {
+      flex-grow: 1;
+      position: relative;
+      /* For proper Pyxel canvas positioning */
+    }
+
+
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+    }
+
+    .modal-content {
+      background-color: #2d2d2d;
+      margin: 10% auto;
+      padding: 20px;
+      border: 1px solid #444;
+      width: 50%;
+      max-width: 500px;
+      border-radius: 8px;
+      color: #fff;
+      font-family: "Press Start 2P", serif;
+      font-size: 12px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-title {
+      font-size: 16px;
+    }
+
+    .close-modal {
+      color: #888;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .close-modal:hover {
+      color: #fff;
+    }
+
+    .modal-body {
+      margin-bottom: 20px;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .modal-input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      background-color: #333;
+      border: 1px solid #444;
+      color: #fff;
+      font-family: monospace;
+      border-radius: 4px;
+    }
+
+    .modal-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: "Press Start 2P", serif;
+      font-size: 10px;
+    }
+
+    .modal-btn-primary {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    .modal-btn-secondary {
+      background-color: #555;
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="editor-panel">
+      <div class="editor-actions">
+        <div class="examples-dropdown">
+          <button class="action-button" id="examples-button">🎮 Examples</button>
+          <div class="dropdown-content">
+            <a href="#" data-example="perlin_noise">Perlin Noise</a>
+            <a href="#" data-example="triangle_api">Triangle API</a>
+            <a href="#" data-example="click_game">Click Game</a>
+            <a href="#" data-example="snake">Snake</a>
+            <a href="#" data-example="shooter">Shooter</a>
+            <a href="#" data-example="platformer">Platformer</a>
+            <a href="#" data-example="jump_game">Jump Game</a>
+            <a href="#" data-example="tetris">Tetris</a>
+            <a href="#" data-example="baba_is_you">Baba Is You</a>
+          </div>
+        </div>
+        <div class="spacer"></div>
+      </div>
+      <div class="editor-container">
+        <div id="editor">import pyxel
+
+pyxel.init(160, 120)
+
+def update():
+  if pyxel.btnp(pyxel.KEY_Q):
+    pyxel.quit()
+
+def draw():
+  pyxel.cls(0)
+  pyxel.text(55, 41, "Hello, Pyxel!", pyxel.frame_count % 16)
+
+pyxel.run(update, draw)</div>
+      </div>
+    </div>
+
+    <div class="resizer" id="panel-resizer"></div>
+
+    <div class="right-panel">
+      <div id="game-content" class="tab-content">
+        <!-- Game Container will be populated dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Store our editor
+    let editor;
+    let resourceData = "";
+    let gameIframe = null;
+    
+    // Initialize the editor
+    editor = ace.edit("editor");
+    editor.setTheme("ace/theme/monokai");
+    editor.session.setMode("ace/mode/python");
+    editor.setOptions({
+        fontSize: "14px",
+        showPrintMargin: false,
+        highlightActiveLine: true,
+        enableLiveAutocompletion: true
+    });
+    
+    // Function to update or create the game iframe
+    function updateGame() {
+        const gameContainer = document.getElementById('game-content');
+        const code = editor.getValue();
+        
+        // Store the code in sessionStorage to avoid URL size limitations
+        sessionStorage.setItem('pyxelCode', code);
+        sessionStorage.setItem('pyxelResource', resourceData);
+        
+        // If there's an existing iframe, just update its src
+        if (gameIframe && gameIframe.parentNode === gameContainer) {
+            gameIframe.src = 'player.html?useSessionStorage=true';
+        } else {
+            // Create a new iframe
+            gameContainer.innerHTML = '';
+            gameIframe = document.createElement('iframe');
+            gameIframe.style.width = '100%';
+            gameIframe.style.height = '100%';
+            gameIframe.style.border = 'none';
+            
+            // Use sessionStorage instead of URL parameters
+            gameIframe.src = 'player.html?useSessionStorage=true';
+            
+            gameContainer.appendChild(gameIframe);
+        }
+    }
+    
+    // Function to load a lesson
+    function deserializeProject(projectData) {
+        // Get the content of main.py
+        const mainFile = 'main.py';
+        const content = projectData.files[mainFile];
+        
+        // Update editor content
+        editor.setValue(content, -1);
+        
+        // Set resource data
+        resourceData = projectData.resourceData || "";
+        
+        // Update the game display
+        updateGame();
+    }
+
+    // Add a save button to the editor actions
+    const saveButton = document.createElement('button');
+    saveButton.classList.add('action-button');
+    saveButton.textContent = '💾 Save';
+    saveButton.id = 'save-button';
+    document.querySelector('.editor-actions').appendChild(saveButton);
+    
+    // Track if content has unsaved changes
+    let hasUnsavedChanges = false;
+    
+    // Function to update save button appearance
+    function updateSaveButtonState(unsaved) {
+        hasUnsavedChanges = unsaved;
+        const saveButton = document.getElementById('save-button');
+        if (unsaved) {
+            saveButton.textContent = '💾 Save*';
+            saveButton.style.background = '#ff9800';
+        } else {
+            saveButton.textContent = '💾 Save';
+            saveButton.style.background = '';
+        }
+    }
+    
+    // Add event listener for the save button
+    document.getElementById('save-button').addEventListener('click', () => {
+        if (gameIframe) {
+            updateGame();
+            updateSaveButtonState(false);
+        }
+    });
+    
+    // Add event listener for cmd+s/ctrl+s
+    editor.commands.addCommand({
+        name: 'saveCommand',
+        bindKey: {win: 'Ctrl-S', mac: 'Command-S'},
+        exec: function() {
+            if (gameIframe) {
+                updateGame();
+                updateSaveButtonState(false);
+            }
+            return true; // Prevent browser's save dialog
+        }
+    });
+    
+    // Flag to ignore the first change event after loading an example
+    let ignoreNextChange = false;
+    
+    // Add event listener to detect code changes
+    editor.session.on('change', (e) => {
+        // If we should ignore this change (from loading an example), don't update save button
+        if (ignoreNextChange) {
+            ignoreNextChange = false;
+            return;
+        }
+        updateSaveButtonState(true);
+    });
+    
+    // Override setValue to set the ignore flag
+    const originalSetValue = editor.setValue;
+    editor.setValue = function(val, cursorPos) {
+        ignoreNextChange = true;
+        return originalSetValue.call(this, val, cursorPos);
+    };
+    
+    // Initialize the game on page load 
+    // Wait for DOM to be fully loaded
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initialize the game view
+        updateGame();
+    });
+    
+    // Initialize the game immediately in case DOMContentLoaded already fired
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        updateGame();
+    }
+    
+    // Example project metadata
+    const exampleProjects = {
+        jump_game: {
+            title: "Jump Game",
+            path: "../games/jump_game/game.py",
+            resourceData: "../games/jump_game/game.pyxres"
+        },
+        click_game: {
+            title: "Click Game",
+            path: "../games/click_game/game.py",
+            resourceData: ""
+        },
+        snake: {
+            title: "Snake",
+            path: "../games/snake/game.py",
+            resourceData: ""
+        },
+        triangle_api: {
+            title: "Triangle API",
+            path: "../games/triangle_api/game.py",
+            resourceData: ""
+        },
+        shooter: {
+            title: "Shooter",
+            path: "../games/shooter/game.py",
+            resourceData: ""
+        },
+        platformer: {
+            title: "Platformer",
+            path: "../games/platformer/game.py",
+            resourceData: "../games/platformer/game.pyxres"
+        },
+        perlin_noise: {
+            title: "Perlin Noise",
+            path: "../games/perlin_noise/game.py",
+            resourceData: ""
+        },
+        baba_is_you: {
+            title: "Baba Is You",
+            path: "../games/baba_is_you/game.py",
+            resourceData: "../games/baba_is_you/game.pyxres"
+        },
+        tetris: {
+            title: "Tetris",
+            path: "../games/tetris/game.py",
+            resourceData: "../games/tetris/game.pyxres"
+        },
+    };
+    
+    // Function to load example code from file
+    async function loadExampleFile(path) {
+        try {
+            const response = await fetch(path);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch example: ${response.status} ${response.statusText}`);
+            }
+            return await response.text();
+        } catch (error) {
+            console.error("Error loading example:", error);
+            return "# Error loading example\n# " + error.message;
+        }
+    }
+    
+    // Add event listeners for example selection
+    document.querySelectorAll('.dropdown-content a').forEach(link => {
+        link.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const exampleId = e.target.getAttribute('data-example');
+            const example = exampleProjects[exampleId];
+            
+            if (example) {
+                try {
+                    // Show loading indicator
+                    document.body.style.cursor = 'wait';
+                    
+                    // Load the example code
+                    const content = await loadExampleFile(example.path);
+                    
+                    // Create a project object that matches our existing deserializeProject format
+                    const projectData = {
+                        files: {
+                            'main.py': content
+                        },
+                        resourceData: example.resourceData || ""
+                    };
+                    
+                    // Load the project into the editor
+                    deserializeProject(projectData);
+                    
+                    // Reset the save button state to not highlight as if modified
+                    updateSaveButtonState(false);
+                    
+                    // Set the document title to include the example name
+                    document.title = `Pyxel Playground - ${example.title}`;
+                } catch (error) {
+                    console.error("Failed to load example:", error);
+                    alert("Failed to load example: " + error.message);
+                } finally {
+                    // Reset cursor
+                    document.body.style.cursor = '';
+                }
+            }
+        });
+    });
+    
+    // Panel resizer functionality
+    const panelResizer = document.getElementById('panel-resizer');
+    const editorPanel = document.querySelector('.editor-panel');
+    const rightPanel = document.querySelector('.right-panel');
+    
+    // Initialize with stored panel sizes if available, otherwise use default 50/50
+    const storedEditorWidth = localStorage.getItem('pyxelEditorWidth');
+    if (storedEditorWidth) {
+        editorPanel.style.flex = '0 0 ' + storedEditorWidth + 'px';
+    } else {
+        // Default to 50% of container width
+        const containerWidth = document.querySelector('.container').clientWidth;
+        editorPanel.style.flex = '0 0 ' + (containerWidth / 2) + 'px';
+    }
+    
+    // Resize functionality
+    let isResizing = false;
+    let lastDownX = 0;
+    
+    panelResizer.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        lastDownX = e.clientX;
+        panelResizer.classList.add('active');
+        
+        // Prevent text selection during resize
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'col-resize';
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+        
+        const containerRect = document.querySelector('.container').getBoundingClientRect();
+        const offsetX = e.clientX - containerRect.left;
+        
+        // Calculate min/max values
+        const minWidth = 200; // Minimum editor width
+        const maxWidth = containerRect.width - 200; // Maximum editor width (leaving min space for right panel)
+        
+        // Apply constraints
+        const newWidth = Math.min(Math.max(offsetX, minWidth), maxWidth);
+        
+        // Update editor panel width
+        editorPanel.style.flex = '0 0 ' + newWidth + 'px';
+        
+        // Force Ace editor to update its size
+        if (editor) {
+            editor.resize();
+        }
+    });
+    
+    document.addEventListener('mouseup', () => {
+        if (isResizing) {
+            isResizing = false;
+            panelResizer.classList.remove('active');
+            
+            // Reset cursor and selection
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+            
+            // Save the editor width for next time
+            const editorWidth = editorPanel.offsetWidth;
+            localStorage.setItem('pyxelEditorWidth', editorWidth);
+            
+            // Make sure editor resizes properly
+            if (editor) {
+                editor.resize();
+            }
+        }
+    });
+    
+    // Resize editor when window changes
+    window.addEventListener('resize', () => {
+        // Resize editor to fit the new layout
+        if (editor) {
+            editor.resize();
+        }
+        
+        // Update game iframe if it exists
+        if (gameIframe) {
+            // Ensure panels maintain reasonable sizes in new window dimensions
+            const containerWidth = document.querySelector('.container').clientWidth;
+            const minWidth = 200;
+            const currentEditorWidth = parseInt(editorPanel.style.flex.split(' ')[2]);
+            
+            // If editor is too large or small after resize, adjust it
+            if (currentEditorWidth > containerWidth - minWidth || currentEditorWidth < minWidth) {
+                const newWidth = Math.min(Math.max(containerWidth / 2, minWidth), containerWidth - minWidth);
+                editorPanel.style.flex = '0 0 ' + newWidth + 'px';
+            }
+        }
+    });
+
+    document.addEventListener('click', (event) => {
+        // Get the Pyxel canvas element (created by Pyxel)
+        const pyxelCanvas = document.querySelector('#canvas');
+        if (!pyxelCanvas) return;  // Exit if game isn't running
+
+        // Check if click was outside the Pyxel canvas
+        if (!pyxelCanvas.contains(event.target)) {
+            // Create and dispatch an Escape key event
+            const escEvent = new KeyboardEvent('keydown', {
+                key: 'Escape',
+                code: 'Escape',
+                keyCode: 27,
+                which: 27,
+                bubbles: true,
+                cancelable: true
+            });
+            
+            pyxelCanvas.dispatchEvent(escEvent);
+        }
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PyScript Interactive Example</title>
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.3.1/core.css">
+    <script type="module" src="https://pyscript.net/releases/2024.3.1/core.js"></script>
+</head>
+<body>
+
+<div style="margin: 20px;">
+    <h2>Run Python Code in Browser</h2>
+    <textarea id="code-input" rows="10" cols="50">print("Hello from PyScript!")</textarea><br>
+    <button id="execute-btn">Execute</button>
+    <h3>Output:</h3>
+    <pre id="output"></pre>
+</div>
+
+<script type="py">
+import js
+from pyscript import display
+
+def execute_code(event):
+    code = js.document.getElementById('code-input').value
+    try:
+        exec_globals = {}
+        exec(code, exec_globals)
+    except Exception as e:
+        display(e, target="output")
+
+js.document.getElementById('execute-btn').addEventListener('click', execute_code)
+</script>
+
+</body>
+</html>
