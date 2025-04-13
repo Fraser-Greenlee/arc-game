@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARC Grid Code Challenge</title>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ace.js"></script>
+    <style>
+        :root {
+            --bg-color: #1e3050;
+            --header-bg: #2a4166;
+            --panel-bg: #d0d8e8;
+            --accent-bg: #ffffff;
+            --grid-bg: #1e3050;
+            --border-color: #ffffff;
+            --text-color: #ffffff;
+            --x-axis-color: #ff5959; /* Red for X axis */
+            --y-axis-color: #59ff59; /* Green for Y axis */
+            --label-color: #1e3050;
+            --title-color: #ffff59;
+            --button-color: #59ff59;
+            --button-hover: #3fd33f;
+            --button-active: #2eaf2e;
+            --pixel-white: #ffffff;
+            --pixel-black: #000000;
+            --pixel-red: #ff5959;
+            --pixel-blue: #5959ff;
+            --pixel-green: #59ff59;
+            --pixel-yellow: #ffff59;
+            --pixel-magenta: #ff59ff;
+            --pixel-cyan: #59ffff;
+            --editor-bg: #1e1e1e;
+            --editor-header: #2d2d2d;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: "Courier New", monospace;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            padding: 20px;
+            margin: 0;
+            height: 100vh;
+            letter-spacing: 0.5px;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 20px;
+            color: var(--title-color);
+            text-transform: uppercase;
+            background-color: var(--header-bg);
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            font-weight: normal;
+        }
+        
+        .container {
+            display: flex;
+            height: calc(100vh - 100px);
+            gap: 10px;
+        }
+        
+        /* Editor Panel */
+        .editor-panel {
+            display: flex;
+            flex-direction: column;
+            background: var(--editor-bg);
+            overflow: hidden;
+            flex: 1;
+            min-width: 300px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .editor-header {
+            display: flex;
+            background: var(--editor-header);
+            border-bottom: 1px solid var(--border-color);
+            padding: 8px 16px;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .editor-title {
+            color: var(--title-color);
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+        
+        .editor-container {
+            position: relative;
+            flex-grow: 1;
+        }
+        
+        #editor {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        /* Right Panel - Grid Viewer */
+        .grid-panel {
+            display: flex;
+            flex-direction: column;
+            background: var(--editor-bg);
+            overflow: hidden;
+            flex: 1;
+            min-width: 300px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .grid-header {
+            display: flex;
+            background: var(--editor-header);
+            border-bottom: 1px solid var(--border-color);
+            padding: 8px 16px;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .grid-title {
+            color: var(--title-color);
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+        
+        .grid-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+        
+        /* Grid Container */
+        .grid-wrapper {
+            position: relative;
+            width: 340px;
+            height: 340px;
+            background-color: var(--grid-bg);
+            border: 1px solid var(--border-color);
+            padding: 30px 0 0 30px; /* Space for axes */
+            margin-bottom: 20px;
+        }
+        
+        .grid-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+            border-left: 2px solid var(--x-axis-color);
+            border-top: 2px solid var(--y-axis-color);
+        }
+        
+        /* X and Y axes */
+        .x-axis {
+            position: absolute;
+            top: 0;
+            left: 30px;
+            right: 0;
+            height: 2px;
+            background-color: var(--x-axis-color);
+            z-index: 1;
+        }
+        
+        .y-axis {
+            position: absolute;
+            top: 30px;
+            bottom: 0;
+            left: 0;
+            width: 2px;
+            background-color: var(--y-axis-color);
+            z-index: 1;
+        }
+        
+        /* Tick marks */
+        .tick {
+            position: absolute;
+            z-index: 2;
+        }
+        
+        .x-tick {
+            width: 2px;
+            height: 5px;
+            top: -5px; /* Points upward */
+            background-color: var(--x-axis-color);
+        }
+        
+        .y-tick {
+            width: 5px;
+            height: 2px;
+            left: -5px; /* Points to the left */
+            background-color: var(--y-axis-color);
+        }
+        
+        /* Axis labels */
+        .axis-labels {
+            position: absolute;
+            font-size: 12px;
+            z-index: 2;
+            font-weight: bold;
+        }
+        
+        .x-labels {
+            top: -20px; /* Now above the x-axis */
+            left: 0;
+            right: 0;
+        }
+        
+        .y-labels {
+            top: 0;
+            bottom: 0;
+            left: -20px; /* Now to the left of y-axis */
+        }
+        
+        .x-label, .y-label {
+            position: absolute;
+            color: var(--text-color);
+            width: 20px;
+            text-align: center;
+            background-color: transparent;
+            border: none;
+        }
+        
+        .x-label {
+            transform: translateX(-50%);
+        }
+        
+        .y-label {
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translateY(-50%);
+        }
+        
+        /* Axis names */
+        .axis-name {
+            position: absolute;
+            font-weight: bold;
+            z-index: 2;
+        }
+        
+        .x-name {
+            top: -20px;
+            right: 10px;
+            color: var(--x-axis-color);
+        }
+        
+        .y-name {
+            left: -20px;
+            bottom: 10px;
+            color: var(--y-axis-color);
+        }
+        
+        /* Origin label */
+        .origin-label {
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            width: 20px;
+            height: 20px;
+            color: var(--text-color);
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            z-index: 3;
+        }
+        
+        /* Arrow styles */
+        .x-arrow-right {
+            position: absolute;
+            right: 2px;
+            top: 0;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-top: 4px solid transparent;
+            border-bottom: 4px solid transparent;
+            border-left: 8px solid var(--x-axis-color);
+            z-index: 2;
+        }
+        
+        .y-arrow-down {
+            position: absolute;
+            bottom: 2px;
+            left: 0;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 8px solid var(--y-axis-color);
+            z-index: 2;
+        }
+        
+        /* Origin marker */
+        .origin-marker {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 6px;
+            background-color: #5959ff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 3;
+        }
+        
+        .grid {
+            position: relative;
+            display: inline-block;
+            background-color: transparent;
+            z-index: 4;
+        }
+        
+        .grid-row {
+            display: flex;
+        }
+        
+        .grid-cell {
+            width: 30px;
+            height: 30px;
+            border: 0;
+            margin: 1px;
+            position: relative;
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .grid-cell:hover {
+            transform: scale(1.05);
+            z-index: 5;
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+        
+        .grid-cell:hover::after {
+            content: attr(data-coords) ":" attr(data-value);
+            position: absolute;
+            top: -25px;
+            left: 0;
+            background-color: var(--header-bg);
+            color: var(--text-color);
+            padding: 2px 5px;
+            border: 1px solid var(--border-color);
+            font-size: 10px;
+            white-space: nowrap;
+            z-index: 10;
+        }
+        
+        /* Pop animation */
+        .pop-in {
+            animation: popIn 0.8s cubic-bezier(0.25, 1.5, 0.5, 1.2);
+        }
+        
+        @keyframes popIn {
+            0% { 
+                transform: scale(0.05); 
+            }
+            60% { 
+                transform: scale(1.15);
+            }
+            80% {
+                transform: scale(0.95);
+            }
+            100% { 
+                transform: scale(1); 
+            }
+        }
+        
+        /* Run button */
+        .run-button-container {
+            margin-top: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            position: relative;
+        }
+        
+        .run-button {
+            background-color: var(--button-color);
+            color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            padding: 10px 40px;
+            font-family: "Courier New", monospace;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: background-color 0.2s ease;
+            letter-spacing: 2px;
+        }
+        
+        .run-button:hover {
+            background-color: var(--button-hover);
+        }
+        
+        .run-button:active {
+            background-color: var(--button-active);
+        }
+        
+        .run-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transform: translateX(-100%);
+        }
+        
+        .run-button.running::before {
+            animation: shimmer 1.5s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        /* Loading overlay */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(30, 48, 80, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .loading-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .loading-spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid var(--button-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Status indicator */
+        .status-indicator {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            color: var(--button-color);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .status-indicator.active {
+            opacity: 1;
+        }
+        
+        /* Color key */
+        .color-key {
+            width: 100%;
+            max-width: 340px;
+            background-color: var(--panel-bg);
+            color: var(--label-color);
+            border: 1px solid var(--border-color);
+        }
+        
+        .key-title {
+            background-color: var(--header-bg);
+            color: var(--title-color);
+            padding: 5px 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .key-content {
+            padding: 10px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        
+        .key-color {
+            display: flex;
+            align-items: center;
+        }
+        
+        .color-swatch {
+            width: 20px;
+            height: 20px;
+            border: 1px solid var(--border-color);
+            margin-right: 10px;
+        }
+        
+        /* For debugging */
+        .debug-output {
+            width: 100%;
+            max-width: 340px;
+            max-height: 150px;
+            overflow-y: auto;
+            background-color: var(--editor-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            font-family: monospace;
+            font-size: 12px;
+            padding: 10px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+        }
+        
+        /* Version label */
+        .version-label {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 10px;
+            color: var(--text-color);
+            opacity: 0.7;
+        }
+        
+        /* Task Selector */
+        .task-selector {
+            width: 100%;
+            max-width: 340px;
+            margin-bottom: 20px;
+            background-color: var(--panel-bg);
+            color: var(--label-color);
+            border: 1px solid var(--border-color);
+        }
+        
+        .task-selector-title {
+            background-color: var(--header-bg);
+            color: var(--title-color);
+            padding: 5px 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .task-selector-content {
+            padding: 10px;
+        }
+        
+        .task-selector select {
+            width: 100%;
+            padding: 8px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            font-family: "Courier New", monospace;
+        }
+        
+        /* Resizer */
+        .resizer {
+            width: 8px;
+            height: 100%;
+            background: #333;
+            cursor: col-resize;
+            transition: background 0.2s;
+            z-index: 10;
+        }
+        
+        .resizer:hover {
+            background: #555;
+        }
+        
+        .resizer.active {
+            background: var(--button-color);
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .editor-panel, .grid-panel {
+                height: 500px;
+                min-width: 100%;
+            }
+            
+            .resizer {
+                width: 100%;
+                height: 8px;
+                cursor: row-resize;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>ARC GRID CODE CHALLENGE</h1>
+    
+    <div class="container">
+        <!-- Editor Panel -->
+        <div class="editor-panel">
+            <div class="editor-header">
+                <div class="editor-title">PYTHON CODE EDITOR</div>
+            </div>
+            <div class="editor-container">
+                <div id="editor">import numpy as np
+
+# This function will be called when you click RUN
+# It should return a 2D grid (list of lists of integers)
+def create_grid():
+    # Example: Create a simple checkerboard pattern
+    grid = []
+    for i in range(3):
+        row = []
+        for j in range(3):
+            row.append((i + j) % 2)  # Alternates between 0 and 1
+        grid.append(row)
+    
+    return grid
+</div>
+            </div>
+        </div>
+        
+        <!-- Resizer -->
+        <div class="resizer" id="panel-resizer"></div>
+        
+        <!-- Grid Viewer Panel -->
+        <div class="grid-panel">
+            <div class="grid-header">
+                <div class="grid-title">GRID VIEWER</div>
+            </div>
+            <div class="grid-content">
+                <!-- Task Selector -->
+                <div class="task-selector">
+                    <div class="task-selector-title">SELECT A TASK</div>
+                    <div class="task-selector-content">
+                        <select id="task-select">
+                            <!-- Will be populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Target Grid -->
+                <div class="grid-wrapper">
+                    <!-- Loading overlay -->
+                    <div class="loading-overlay" id="loading-overlay">
+                        <div class="loading-spinner"></div>
+                    </div>
+                    
+                    <div class="grid-inner">
+                        <!-- Origin marker and label -->
+                        <div class="origin-marker"></div>
+                        <div class="origin-label">0</div>
+                        
+                        <!-- Axis names -->
+                        <div class="axis-name x-name">X</div>
+                        <div class="axis-name y-name">Y</div>
+                        
+                        <!-- Axis arrows -->
+                        <div class="x-arrow-right"></div>
+                        <div class="y-arrow-down"></div>
+                        
+                        <!-- Axis labels and ticks -->
+                        <div class="axis-labels x-labels" id="target-x-labels"></div>
+                        <div class="axis-labels y-labels" id="target-y-labels"></div>
+                        
+                        <!-- Grid -->
+                        <div class="grid" id="target-grid"></div>
+                    </div>
+                </div>
+                
+                <!-- Color Key -->
+                <div class="color-key">
+                    <div class="key-title">COLOR MAPPING</div>
+                    <div class="key-content" id="color-key-container">
+                        <!-- Color keys will be added dynamically -->
+                    </div>
+                </div>
+                
+                <!-- Run button -->
+                <div class="run-button-container">
+                    <div class="status-indicator" id="status-indicator">RUNNING PYTHON CODE...</div>
+                    <button class="run-button" id="run-button">RUN</button>
+                </div>
+                
+                <!-- Debug output -->
+                <div class="debug-output" id="debug-output"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="version-label">ARC Grid Challenge v1.0</div>
+
+    <script>
+        // Scientific calculator style color mapping
+        const COLOR_MAP = {
+            0: 'var(--pixel-white)',   // White
+            1: 'var(--pixel-black)',   // Black
+            2: 'var(--pixel-red)',     // Red
+            3: 'var(--pixel-blue)',    // Blue
+            4: 'var(--pixel-green)',   // Green
+            5: 'var(--pixel-yellow)',  // Yellow
+            6: 'var(--pixel-magenta)', // Magenta
+            7: 'var(--pixel-cyan)',    // Cyan
+            8: '#a0a0a0',              // Gray
+            9: '#ff8000'               // Orange
+        };
+        
+        // Global variables
+        let editor;
+        let pyodide = null;
+        let currentTask = null;
+        let taskList = [];
+        
+        // Initialize the editor
+        function initializeEditor() {
+            editor = ace.edit("editor");
+            editor.setTheme("ace/theme/monokai");
+            editor.session.setMode("ace/mode/python");
+            editor.setOptions({
+                fontSize: "14px",
+                showPrintMargin: false,
+                highlightActiveLine: true,
+                enableLiveAutocompletion: true
+            });
+            
+            // Add keyboard shortcut for running code
+            editor.commands.addCommand({
+                name: 'runCode',
+                bindKey: {win: 'Shift-Enter', mac: 'Shift-Enter'},
+                exec: function() {
+                    runPythonCode();
+                }
+            });
+            
+            // Show shortcut info in the debug output
+            document.getElementById('debug-output').textContent = "Press Shift+Enter to run your code";
+        }
+        
+        // Function to get color from value
+        function getColorFromValue(value) {
+            return COLOR_MAP[value] || '#cccccc'; // Default gray for unknown values
+        }
+        
+        // Function to create axis labels and ticks
+        function createAxisLabels(gridData, xLabelsId, yLabelsId) {
+            const xLabels = document.getElementById(xLabelsId);
+            const yLabels = document.getElementById(yLabelsId);
+            
+            xLabels.innerHTML = '';
+            yLabels.innerHTML = '';
+            
+            // X-axis labels (starting from 1)
+            for (let x = 1; x < gridData[0].length; x++) {
+                const label = document.createElement('div');
+                label.className = 'x-label';
+                label.textContent = x;
+                
+                // Position the label along the x-axis
+                // Calculate position based on cell size (30px) + margin (1px on each side)
+                const pixelPos = x * 32; // 30px cell + 2px total margin
+                label.style.left = `${pixelPos}px`;
+                
+                xLabels.appendChild(label);
+                
+                // Create tick mark
+                const tick = document.createElement('div');
+                tick.className = 'tick x-tick';
+                tick.style.left = `${pixelPos}px`;
+                xLabels.appendChild(tick);
+            }
+            
+            // Y-axis labels (starting from 1)
+            for (let y = 1; y < gridData.length; y++) {
+                const label = document.createElement('div');
+                label.className = 'y-label';
+                label.textContent = y;
+                
+                // Position the label along the y-axis
+                // Calculate position based on cell size (30px) + margin (1px on each side)
+                const pixelPos = y * 32; // 30px cell + 2px total margin
+                label.style.top = `${pixelPos}px`;
+                
+                yLabels.appendChild(label);
+                
+                // Create tick mark
+                const tick = document.createElement('div');
+                tick.className = 'tick y-tick';
+                tick.style.top = `${pixelPos}px`;
+                yLabels.appendChild(tick);
+            }
+        }
+        
+        // Function to render a grid
+        function renderGrid(gridData, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = ''; // Clear previous content
+            
+            gridData.forEach((row, y) => {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'grid-row';
+                
+                row.forEach((cell, x) => {
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'grid-cell';
+                    cellDiv.style.backgroundColor = getColorFromValue(cell);
+                    
+                    // Use standard coordinates starting from (0,0)
+                    cellDiv.dataset.coords = `(${x},${y})`;
+                    cellDiv.dataset.value = cell;
+                    
+                    rowDiv.appendChild(cellDiv);
+                });
+                
+                container.appendChild(rowDiv);
+            });
+        }
+        
+        // Function to render grid with slower pop animation
+        function renderGridWithPopAnimation(gridData, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = ''; // Clear previous content
+            
+            // First create all cells with their final colors but tiny size
+            gridData.forEach((row, y) => {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'grid-row';
+                
+                row.forEach((cell, x) => {
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'grid-cell';
+                    cellDiv.style.backgroundColor = getColorFromValue(cell);
+                    cellDiv.style.transform = 'scale(0.05)'; // Start very small
+                    
+                    // Use standard coordinates starting from (0,0)
+                    cellDiv.dataset.coords = `(${x},${y})`;
+                    cellDiv.dataset.value = cell;
+                    
+                    rowDiv.appendChild(cellDiv);
+                });
+                
+                container.appendChild(rowDiv);
+            });
+            
+            // Add a slight delay then make all cells pop at once
+            setTimeout(() => {
+                const cells = container.querySelectorAll('.grid-cell');
+                cells.forEach(cell => {
+                    cell.classList.add('pop-in');
+                    cell.style.transform = ''; // Remove inline transform to let animation work
+                });
+            }, 200); // Slightly longer delay before animation starts
+        }
+        
+        // Create color key
+        function createColorKey() {
+            const container = document.getElementById('color-key-container');
+            container.innerHTML = ''; // Clear previous content
+            
+            Object.entries(COLOR_MAP).forEach(([value, color]) => {
+                const keyDiv = document.createElement('div');
+                keyDiv.className = 'key-color';
+                
+                const swatch = document.createElement('div');
+                swatch.className = 'color-swatch';
+                swatch.style.backgroundColor = color;
+                
+                const label = document.createElement('span');
+                label.textContent = value;
+                
+                keyDiv.appendChild(swatch);
+                keyDiv.appendChild(label);
+                container.appendChild(keyDiv);
+            });
+        }
+        
+        // Load the task list
+        async function loadTaskList() {
+            try {
+                // First try the training data
+                const trainingResponse = await fetch('/data/training/');
+                
+                if (!trainingResponse.ok) {
+                    throw new Error('Failed to load task list');
+                }
+                
+                const trainingFiles = await trainingResponse.json();
+                taskList = trainingFiles.map(file => ({
+                    id: file.replace('.json', ''),
+                    path: `/data/training/${file}`,
+                    type: 'training'
+                }));
+            } catch (error) {
+                console.error('Error loading task list:', error);
+                // Fallback to a hardcoded first task for demo
+                taskList = [{
+                    id: '007bbfb7',
+                    path: '/data/training/007bbfb7.json',
+                    type: 'training'
+                }];
+            }
+            
+            // Populate the select dropdown
+            const select = document.getElementById('task-select');
+            taskList.forEach(task => {
+                const option = document.createElement('option');
+                option.value = task.id;
+                option.textContent = `${task.type}: ${task.id}`;
+                select.appendChild(option);
+            });
+            
+            // Load the first task
+            if (taskList.length > 0) {
+                select.value = taskList[0].id;
+                loadTask(taskList[0].id);
+            }
+        }
+        
+        // Alternative method to fetch a single task directly
+        async function loadTask(taskId) {
+            const debugOutput = document.getElementById('debug-output');
+            debugOutput.textContent = `Loading task ${taskId}...`;
+            
+            try {
+                const task = taskList.find(t => t.id === taskId);
+                if (!task) {
+                    throw new Error(`Task ${taskId} not found`);
+                }
+                
+                const response = await fetch(task.path);
+                if (!response.ok) {
+                    throw new Error(`Failed to load task ${taskId}`);
+                }
+                
+                const taskData = await response.json();
+                currentTask = taskData;
+                
+                // Display the first input grid from the training examples
+                const grid = currentTask.train[0].input;
+                
+                // Update axis labels and render grid
+                createAxisLabels(grid, 'target-x-labels', 'target-y-labels');
+                renderGrid(grid, 'target-grid');
+                
+                debugOutput.textContent = `Task ${taskId} loaded. Try to create this grid with your code!`;
+            } catch (error) {
+                console.error('Error loading task:', error);
+                debugOutput.textContent = `Error loading task: ${error.message}`;
+                
+                // Fallback to a simple grid if task cannot be loaded
+                const fallbackGrid = [
+                    [0, 1, 0],
+                    [1, 0, 1],
+                    [0, 1, 0]
+                ];
+                createAxisLabels(fallbackGrid, 'target-x-labels', 'target-y-labels');
+                renderGrid(fallbackGrid, 'target-grid');
+            }
+        }
+        
+        // Initialize Pyodide
+        async function initializePyodide() {
+            const debugOutput = document.getElementById('debug-output');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            
+            try {
+                debugOutput.textContent = "Loading Python environment...";
+                loadingOverlay.classList.add('active');
+                
+                pyodide = await loadPyodide();
+                await pyodide.loadPackage('numpy');
+                
+                loadingOverlay.classList.remove('active');
+                debugOutput.textContent = "Python environment ready!";
+                
+                return true;
+            } catch (error) {
+                console.error('Error initializing Pyodide:', error);
+                debugOutput.textContent = `Error initializing Python: ${error.message}`;
+                loadingOverlay.classList.remove('active');
+                return false;
+            }
+        }
+        
+        // Run the Python code
+        async function runPythonCode() {
+            if (!pyodide) {
+                await initializePyodide();
+                if (!pyodide) return; // Failed to initialize
+            }
+            
+            const code = editor.getValue();
+            const button = document.getElementById('run-button');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const statusIndicator = document.getElementById('status-indicator');
+            const debugOutput = document.getElementById('debug-output');
+            
+            // Prevent multiple clicks
+            if (button.classList.contains('running')) {
+                return;
+            }
+            
+            // Show running state
+            button.classList.add('running');
+            loadingOverlay.classList.add('active');
+            statusIndicator.classList.add('active');
+            debugOutput.textContent = "Running Python code...";
+            
+            try {
+                // Execute the code
+                pyodide.runPython(code);
+                
+                // Call the create_grid function
+                const result = pyodide.runPython('create_grid()');
+                
+                // Convert Python result to JavaScript
+                const gridData = result.toJs();
+                
+                // Validate the result
+                if (!Array.isArray(gridData) || !gridData.length || !Array.isArray(gridData[0])) {
+                    throw new Error('Invalid grid format. Return value must be a 2D list of integers.');
+                }
+                
+                // Check if all elements are numbers
+                let isValid = true;
+                gridData.forEach(row => {
+                    row.forEach(cell => {
+                        if (typeof cell !== 'number' || isNaN(cell) || cell < 0 || !Number.isInteger(cell)) {
+                            isValid = false;
+                        }
+                    });
+                });
+                
+                if (!isValid) {
+                    throw new Error('Grid must contain only non-negative integers.');
+                }
+                
+                // Update the grid visualization
+                createAxisLabels(gridData, 'target-x-labels', 'target-y-labels');
+                renderGridWithPopAnimation(gridData, 'target-grid');
+                
+                debugOutput.textContent = `Code executed successfully! Generated grid size: ${gridData.length}x${gridData[0].length}`;
+            } catch (error) {
+                console.error('Error running Python code:', error);
+                debugOutput.textContent = `Error: ${error.message}`;
+            } finally {
+                // Hide running state
+                setTimeout(() => {
+                    button.classList.remove('running');
+                    loadingOverlay.classList.remove('active');
+                    statusIndicator.classList.remove('active');
+                }, 800);
+            }
+        }
+        
+        // Panel resizer functionality
+        function initializeResizer() {
+            const panelResizer = document.getElementById('panel-resizer');
+            const editorPanel = document.querySelector('.editor-panel');
+            const gridPanel = document.querySelector('.grid-panel');
+            const container = document.querySelector('.container');
+            
+            let isResizing = false;
+            let lastDownX = 0;
+            
+            panelResizer.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                lastDownX = e.clientX;
+                panelResizer.classList.add('active');
+                
+                // Prevent text selection during resize
+                document.body.style.userSelect = 'none';
+                document.body.style.cursor = 'col-resize';
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+                
+                // Check if we're in mobile mode
+                const isMobileMode = window.matchMedia('(max-width: 768px)').matches;
+                
+                if (isMobileMode) {
+                    // Handle vertical resizing for mobile
+                    const containerRect = container.getBoundingClientRect();
+                    const offsetY = e.clientY - containerRect.top;
+                    
+                    // Calculate constraints
+                    const minHeight = 200;
+                    const maxHeight = containerRect.height - 200;
+                    
+                    // Apply constraints
+                    const newHeight = Math.min(Math.max(offsetY, minHeight), maxHeight);
+                    
+                    // Update editor panel height
+                    editorPanel.style.height = `${newHeight}px`;
+                    editorPanel.style.flex = 'none';
+                } else {
+                    // Handle horizontal resizing for desktop
+                    const containerRect = container.getBoundingClientRect();
+                    const offsetX = e.clientX - containerRect.left;
+                    
+                    // Calculate min/max values
+                    const minWidth = 200;
+                    const maxWidth = containerRect.width - 200;
+                    
+                    // Apply constraints
+                    const newWidth = Math.min(Math.max(offsetX, minWidth), maxWidth);
+                    
+                    // Update editor panel width
+                    editorPanel.style.flex = '0 0 ' + newWidth + 'px';
+                }
+                
+                // Force Ace editor to update its size
+                if (editor) {
+                    editor.resize();
+                }
+            });
+            
+            document.addEventListener('mouseup', () => {
+                if (isResizing) {
+                    isResizing = false;
+                    panelResizer.classList.remove('active');
+                    
+                    // Reset cursor and selection
+                    document.body.style.userSelect = '';
+                    document.body.style.cursor = '';
+                    
+                    // Make sure editor resizes properly
+                    if (editor) {
+                        editor.resize();
+                    }
+                }
+            });
+            
+            // Resize editor when window changes
+            window.addEventListener('resize', () => {
+                // Resize editor to fit the new layout
+                if (editor) {
+                    editor.resize();
+                }
+            });
+        }
+        
+        // Task selector change handler
+        function initializeTaskSelector() {
+            const taskSelect = document.getElementById('task-select');
+            taskSelect.addEventListener('change', (e) => {
+                loadTask(e.target.value);
+            });
+        }
+        
+        // Initialize everything
+        async function initialize() {
+            // Initialize components
+            initializeEditor();
+            createColorKey();
+            initializeResizer();
+            initializeTaskSelector();
+            
+            // Load task list 
+            await loadTaskList();
+            
+            // Initialize Pyodide in the background
+            initializePyodide();
+            
+            // Add click handler for the run button
+            const runButton = document.getElementById('run-button');
+            runButton.addEventListener('click', runPythonCode);
+        }
+        
+        // Run initialization when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initialize);
+    </script>
+</body>
+</html>
