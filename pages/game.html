@@ -177,6 +177,7 @@
             background-color: var(--grid-bg);
             border: 1px solid var(--border-color);
             padding: 30px 0 0 30px; /* Space for axes */
+            box-sizing: border-box;
         }
         
         .grid-inner {
@@ -357,12 +358,36 @@
         }
         
         .grid-cell {
+            /* Base size for cells - will be dynamically adjusted */
             width: 30px;
             height: 30px;
             border: 0;
             margin: 1px;
             position: relative;
             transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        /* Grid cell sizes for different grid dimensions */
+        .grid-cell-small {  /* For grids 3x3 to 5x5 */
+            width: 55px;
+            height: 55px;
+        }
+        
+        .grid-cell-medium { /* For grids 6x6 to 10x10 */
+            width: 27px;
+            height: 27px;
+        }
+        
+        .grid-cell-large {  /* For grids 11x11 to 20x20 */
+            width: 13px;
+            height: 13px;
+            margin: 0.5px;
+        }
+        
+        .grid-cell-xlarge { /* For grids 21x21 to 30x30 */
+            width: 8px;
+            height: 8px;
+            margin: 0.5px;
         }
         
         .grid-cell:hover {
@@ -672,26 +697,38 @@
 # 5 = GRAY, 6 = PINK, 7 = ORANGE, 8 = TEAL, 9 = MAGENTA
 
 def create_grid():
-    # Get the dimensions from the sample ARC task
-    rows, cols = 3, 3  # Default size, modify as needed
+    # You can create grids from 3x3 up to 30x30
+    # The display will automatically adjust to the grid size
+    size = 10  # Try different sizes: 3, 5, 10, 15, 25, etc.
     
-    # Initialize empty grid
-    grid = []
+    # Create a grid using NumPy (more efficient for larger grids)
+    grid = np.zeros((size, size), dtype=int)
     
-    # Fill the grid with the pattern from the current task
-    for i in range(rows):
-        row = []
-        for j in range(cols):
-            # Example pattern: diagonal with different colors
-            if i == j:
-                row.append(7)  # ORANGE on main diagonal
-            elif i > j:
-                row.append(1)  # BLUE below diagonal
+    # Fill the grid with a pattern
+    for i in range(size):
+        for j in range(size):
+            # Checkerboard of 4 colors
+            if i < size//2:
+                if j < size//2:
+                    grid[i, j] = 1  # BLUE in top-left quadrant
+                else:
+                    grid[i, j] = 2  # RED in top-right quadrant
             else:
-                row.append(2)  # RED above diagonal
-        grid.append(row)
+                if j < size//2:
+                    grid[i, j] = 3  # GREEN in bottom-left quadrant
+                else:
+                    grid[i, j] = 4  # YELLOW in bottom-right quadrant
+            
+            # Add a border
+            if i == 0 or j == 0 or i == size-1 or j == size-1:
+                grid[i, j] = 0  # BLACK border
+            
+            # Add some diagonal elements
+            if i == j:
+                grid[i, j] = 7  # ORANGE diagonal
     
-    return grid
+    # Convert NumPy array to list of lists before returning
+    return grid.tolist()
 </div>
             </div>
         </div>
@@ -851,6 +888,24 @@ def create_grid():
             return COLOR_MAP[value] || '#cccccc'; // Default gray for unknown values
         }
         
+        // Helper function to get cell size in pixels based on grid dimensions
+        function getCellPixelSize(gridData) {
+            const rows = gridData.length;
+            const cols = gridData[0].length;
+            const maxDim = Math.max(rows, cols);
+            
+            // Return cell size and margin based on grid dimensions
+            if (maxDim <= 5) {
+                return { size: 55, margin: 1 };
+            } else if (maxDim <= 10) {
+                return { size: 27, margin: 1 };
+            } else if (maxDim <= 20) {
+                return { size: 13, margin: 0.5 };
+            } else {
+                return { size: 8, margin: 0.5 };
+            }
+        }
+        
         // Function to create axis labels and ticks
         function createAxisLabels(gridData, xLabelsId, yLabelsId) {
             const xLabels = document.getElementById(xLabelsId);
@@ -859,44 +914,96 @@ def create_grid():
             xLabels.innerHTML = '';
             yLabels.innerHTML = '';
             
+            // Get the cell size in pixels based on grid dimensions
+            const { size, margin } = getCellPixelSize(gridData);
+            const pixelStep = size + (2 * margin); // Total space each cell takes
+            
+            // Determine how many labels to show based on grid size
+            // For larger grids, we'll show fewer labels to avoid clutter
+            const maxDim = Math.max(gridData.length, gridData[0].length);
+            let labelInterval = 1; // Show all labels for small grids
+            
+            if (maxDim > 10 && maxDim <= 20) {
+                labelInterval = 2; // Show every other label for medium grids
+            } else if (maxDim > 20) {
+                labelInterval = 5; // Show every fifth label for large grids
+            }
+            
             // X-axis labels (starting from 1)
             for (let x = 1; x < gridData[0].length; x++) {
-                const label = document.createElement('div');
-                label.className = 'x-label';
-                label.textContent = x;
+                const pixelPos = x * pixelStep;
                 
-                // Position the label along the x-axis
-                // Calculate position based on cell size (30px) + margin (1px on each side)
-                const pixelPos = x * 32; // 30px cell + 2px total margin
-                label.style.left = `${pixelPos}px`;
-                
-                xLabels.appendChild(label);
-                
-                // Create tick mark
+                // Create tick mark for all positions
                 const tick = document.createElement('div');
                 tick.className = 'tick x-tick';
                 tick.style.left = `${pixelPos}px`;
                 xLabels.appendChild(tick);
+                
+                // Only create labels at intervals to avoid clutter
+                if (x % labelInterval === 0 || x === gridData[0].length - 1) {
+                    const label = document.createElement('div');
+                    label.className = 'x-label';
+                    label.textContent = x;
+                    
+                    // Position the label along the x-axis
+                    label.style.left = `${pixelPos}px`;
+                    
+                    // Adjust font size for larger grids
+                    if (maxDim > 20) {
+                        label.style.fontSize = '8px';
+                    } else if (maxDim > 10) {
+                        label.style.fontSize = '10px';
+                    }
+                    
+                    xLabels.appendChild(label);
+                }
             }
             
             // Y-axis labels (starting from 1)
             for (let y = 1; y < gridData.length; y++) {
-                const label = document.createElement('div');
-                label.className = 'y-label';
-                label.textContent = y;
+                const pixelPos = y * pixelStep;
                 
-                // Position the label along the y-axis
-                // Calculate position based on cell size (30px) + margin (1px on each side)
-                const pixelPos = y * 32; // 30px cell + 2px total margin
-                label.style.top = `${pixelPos}px`;
-                
-                yLabels.appendChild(label);
-                
-                // Create tick mark
+                // Create tick mark for all positions
                 const tick = document.createElement('div');
                 tick.className = 'tick y-tick';
                 tick.style.top = `${pixelPos}px`;
                 yLabels.appendChild(tick);
+                
+                // Only create labels at intervals to avoid clutter
+                if (y % labelInterval === 0 || y === gridData.length - 1) {
+                    const label = document.createElement('div');
+                    label.className = 'y-label';
+                    label.textContent = y;
+                    
+                    // Position the label along the y-axis
+                    label.style.top = `${pixelPos}px`;
+                    
+                    // Adjust font size for larger grids
+                    if (maxDim > 20) {
+                        label.style.fontSize = '8px';
+                    } else if (maxDim > 10) {
+                        label.style.fontSize = '10px';
+                    }
+                    
+                    yLabels.appendChild(label);
+                }
+            }
+        }
+        
+        // Helper function to determine cell size class based on grid dimensions
+        function getCellSizeClass(gridData) {
+            const rows = gridData.length;
+            const cols = gridData[0].length;
+            const maxDim = Math.max(rows, cols);
+            
+            if (maxDim <= 5) {
+                return 'grid-cell-small';
+            } else if (maxDim <= 10) {
+                return 'grid-cell-medium';
+            } else if (maxDim <= 20) {
+                return 'grid-cell-large';
+            } else {
+                return 'grid-cell-xlarge';
             }
         }
         
@@ -905,13 +1012,16 @@ def create_grid():
             const container = document.getElementById(containerId);
             container.innerHTML = ''; // Clear previous content
             
+            // Get the appropriate cell size class
+            const cellSizeClass = getCellSizeClass(gridData);
+            
             gridData.forEach((row, y) => {
                 const rowDiv = document.createElement('div');
                 rowDiv.className = 'grid-row';
                 
                 row.forEach((cell, x) => {
                     const cellDiv = document.createElement('div');
-                    cellDiv.className = 'grid-cell';
+                    cellDiv.className = `grid-cell ${cellSizeClass}`;
                     cellDiv.style.backgroundColor = getColorFromValue(cell);
                     
                     // Use standard coordinates starting from (0,0)
@@ -923,12 +1033,50 @@ def create_grid():
                 
                 container.appendChild(rowDiv);
             });
+            
+            // Update axis labels for the new grid size
+            const targetWrapper = container.closest('.grid-wrapper');
+            if (targetWrapper) {
+                adjustGridWrapperForSize(targetWrapper, gridData);
+            }
+        }
+        
+        // Function to adjust grid wrapper and axes for different grid sizes
+        function adjustGridWrapperForSize(wrapper, gridData) {
+            const maxDim = Math.max(gridData.length, gridData[0].length);
+            
+            // Get the cell size based on grid dimensions
+            const { size } = getCellPixelSize(gridData);
+            
+            // For very small grids (3x3 to 5x5), we can use larger ticks
+            if (maxDim <= 5) {
+                wrapper.querySelectorAll('.x-tick, .y-tick').forEach(el => {
+                    if (el.classList.contains('x-tick')) {
+                        el.style.height = '6px';
+                    } else {
+                        el.style.width = '6px';
+                    }
+                });
+            }
+            // For very large grids, reduce tick size
+            else if (maxDim > 20) {
+                wrapper.querySelectorAll('.x-tick, .y-tick').forEach(el => {
+                    if (el.classList.contains('x-tick')) {
+                        el.style.height = '3px';
+                    } else {
+                        el.style.width = '3px';
+                    }
+                });
+            }
         }
         
         // Function to render grid with slower pop animation
         function renderGridWithPopAnimation(gridData, containerId) {
             const container = document.getElementById(containerId);
             container.innerHTML = ''; // Clear previous content
+            
+            // Get the appropriate cell size class
+            const cellSizeClass = getCellSizeClass(gridData);
             
             // First create all cells with their final colors but tiny size
             gridData.forEach((row, y) => {
@@ -937,7 +1085,7 @@ def create_grid():
                 
                 row.forEach((cell, x) => {
                     const cellDiv = document.createElement('div');
-                    cellDiv.className = 'grid-cell';
+                    cellDiv.className = `grid-cell ${cellSizeClass}`;
                     cellDiv.style.backgroundColor = getColorFromValue(cell);
                     cellDiv.style.transform = 'scale(0.05)'; // Start very small
                     
@@ -950,6 +1098,12 @@ def create_grid():
                 
                 container.appendChild(rowDiv);
             });
+            
+            // Update axis labels for the new grid size
+            const targetWrapper = container.closest('.grid-wrapper');
+            if (targetWrapper) {
+                adjustGridWrapperForSize(targetWrapper, gridData);
+            }
             
             // Add a slight delay then make all cells pop at once
             setTimeout(() => {
