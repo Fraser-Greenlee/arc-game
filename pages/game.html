@@ -1186,42 +1186,98 @@ def create_grid():
         function updateSimilarityScore(userGrid) {
             if (!currentTask || !userGrid) return;
             
-            const targetGrid = currentTask.train[0].input;
+            // Find the current task information from the task list
+            const taskId = document.getElementById('task-select').value;
+            const task = taskList.find(t => t.id === taskId);
+            if (!task) return;
+            
+            // Get the appropriate target grid based on task type
+            let targetGrid;
+            if (task.type.toLowerCase() === 'training' && currentTask.train && currentTask.train.length > 0) {
+                targetGrid = currentTask.train[0].input;
+            } else if (task.type.toLowerCase() === 'evaluation' && currentTask.test && currentTask.test.length > 0) {
+                targetGrid = currentTask.test[0].input;
+            } else {
+                return; // No valid target grid
+            }
+            
             const score = calculateSimilarity(userGrid, targetGrid);
             document.getElementById('match-percentage').textContent = `${score.toFixed(2)}%`;
+        }
+        
+        // Hard-coded list of evaluation and training files
+        // In a real server environment, you would fetch this dynamically
+        function getTaskFiles() {
+            // Training files (easier tasks)
+            const trainingFiles = [
+                "007bbfb7", "00d62c1b", "017c7c7b", "025d127b", "045e512c", "0520fde7", 
+                "05269061", "05f2a901", "06df4c85", "08ed6ac7", "09629e4f", "0962bcdd", 
+                "0a938d79", "0b148d64", "0ca9ddb6", "0d3d703e", "0dfd9992", "0e206a2e", 
+                "10fcaaa3", "11852cab", "1190e5a7", "137eaa0f", "150deff5", "178fcbfb"
+            ];
+            
+            // Evaluation files (harder tasks)
+            const evaluationFiles = [
+                "00576224", "009d5c81", "00dbd492", "03560426", "05a7bcf2", "0607ce86", 
+                "0692e18c", "070dd51e", "08573cc6", "0934a4d8", "09c534e7", "0a1d4ef5", 
+                "0a2355a6", "0b17323b", "0bb8deee", "0becf7df", "0c786b71", "0c9aba6e",
+                "0d87d2a6", "0e671a1a", "0f63c0b9", "103eff5b", "11e1fe23", "12422b43"
+            ];
+            
+            return { trainingFiles, evaluationFiles };
         }
         
         // Load the task list
         async function loadTaskList() {
             try {
-                // For demonstration, we'll just load tasks from disk
-                const trainingFiles = [
-                    "007bbfb7.json", "00d62c1b.json", "017c7c7b.json", "025d127b.json", 
-                    "045e512c.json", "0520fde7.json", "05269061.json", "05f2a901.json"
-                ];
+                const { trainingFiles, evaluationFiles } = getTaskFiles();
                 
-                taskList = trainingFiles.map(file => ({
-                    id: file.replace('.json', ''),
-                    path: `/data/training/${file}`,
-                    type: 'training'
+                // Map training files to task objects
+                const trainingTasks = trainingFiles.map(id => ({
+                    id,
+                    path: `/data/training/${id}.json`,
+                    type: 'Training'
                 }));
+                
+                // Map evaluation files to task objects
+                const evaluationTasks = evaluationFiles.map(id => ({
+                    id,
+                    path: `/data/evaluation/${id}.json`,
+                    type: 'Evaluation'
+                }));
+                
+                // Combine both lists, with training tasks first (they're easier)
+                taskList = [...trainingTasks, ...evaluationTasks];
             } catch (error) {
                 console.error('Error loading task list:', error);
                 // Fallback to a hardcoded first task for demo
                 taskList = [{
                     id: '007bbfb7',
                     path: '/data/training/007bbfb7.json',
-                    type: 'training'
+                    type: 'Training'
                 }];
             }
             
-            // Populate the select dropdown
+            // Create task groups in the dropdown
             const select = document.getElementById('task-select');
+            select.innerHTML = ''; // Clear any existing options
+            
+            // Add an optgroup for each type (Training/Evaluation)
+            const typeGroups = {};
+            
             taskList.forEach(task => {
+                // Create the option group if it doesn't exist
+                if (!typeGroups[task.type]) {
+                    typeGroups[task.type] = document.createElement('optgroup');
+                    typeGroups[task.type].label = `${task.type} Tasks`;
+                    select.appendChild(typeGroups[task.type]);
+                }
+                
+                // Add the option to the appropriate group
                 const option = document.createElement('option');
                 option.value = task.id;
-                option.textContent = `${task.type}: ${task.id}`;
-                select.appendChild(option);
+                option.textContent = task.id;
+                typeGroups[task.type].appendChild(option);
             });
             
             // Load the first task
@@ -1250,8 +1306,16 @@ def create_grid():
                 const taskData = await response.json();
                 currentTask = taskData;
                 
-                // Display the first input grid from the training examples
-                const grid = currentTask.train[0].input;
+                // For both training and test tasks, we'll use the first input grid
+                // Determine which collection to use based on task type
+                let grid;
+                if (task.type.toLowerCase() === 'training' && taskData.train && taskData.train.length > 0) {
+                    grid = taskData.train[0].input;
+                } else if (task.type.toLowerCase() === 'evaluation' && taskData.test && taskData.test.length > 0) {
+                    grid = taskData.test[0].input;
+                } else {
+                    throw new Error(`Task ${taskId} has no input examples`);
+                }
                 
                 // Update axis labels and render grid
                 createAxisLabels(grid, 'target-x-labels', 'target-y-labels');
@@ -1265,7 +1329,8 @@ def create_grid():
                 // Reset match percentage
                 document.getElementById('match-percentage').textContent = "0.00%";
                 
-                debugOutput.textContent = `Task ${taskId} loaded. Try to create this grid with your code!`;
+                // Update the debug output with task type info
+                debugOutput.textContent = `${task.type} task ${taskId} loaded. Try to create this grid with your code!`;
             } catch (error) {
                 console.error('Error loading task:', error);
                 debugOutput.textContent = `Error loading task: ${error.message}`;
