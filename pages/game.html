@@ -558,41 +558,31 @@
             opacity: 1;
         }
         
-        /* Color key */
-        .color-key {
-            width: 100%;
-            max-width: 340px;
-            background-color: var(--panel-bg);
-            color: var(--label-color);
-            border: 1px solid var(--border-color);
-        }
-        
-        .key-title {
-            background-color: var(--header-bg);
-            color: var(--title-color);
-            padding: 5px 10px;
-            font-size: 14px;
-            text-transform: uppercase;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .key-content {
-            padding: 10px;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
+        /* Color key bar */
+        .color-key-bar {
+            display: flex;
+            overflow-x: auto;
+            background-color: var(--editor-header);
+            border-top: 1px solid var(--border-color);
+            color: var(--text-color);
+            font-size: 12px;
+            padding: 4px 8px;
+            align-items: center;
             gap: 10px;
+            white-space: nowrap;
         }
         
-        .key-color {
+        .color-key-item {
             display: flex;
             align-items: center;
+            gap: 4px;
         }
         
-        .color-swatch {
-            width: 20px;
-            height: 20px;
+        .color-box {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
             border: 1px solid var(--border-color);
-            margin-right: 10px;
         }
         
         /* Results panel */
@@ -893,6 +883,19 @@ class Line(BaseDrawer):
         return result
 </div>
             </div>
+            <!-- Color Key Bar -->
+            <div class="color-key-bar">
+                <div class="color-key-item"><span class="color-box" style="background-color: #000000;"></span>0:BLACK</div>
+                <div class="color-key-item"><span class="color-box" style="background-color: #0000FF;"></span>1:BLUE</div>
+                <div class="color-key-item"><span class="color-box" style="background-color: #FF0000;"></span>2:RED</div>
+                <div class="color-key-item"><span class="color-box" style="background-color: #00FF00;"></span>3:GREEN</div>
+                <div class="color-key-item"><span class="color-box" style="background-color: #FFFF00;"></span>4:YELLOW</div>
+                <div class="color-key-item"><span class="color-box" style="background-color: #808080;"></span>5:GRAY</div>
+                <div class="color-key-item"><span class="color-box" style="background-color: #FFC0CB;"></span>6:PINK</div>
+                <div class="color-key-item"><span class="color-box" style="background-color: #FFA500;"></span>7:ORANGE</div>
+                <div class="color-key-item"><span class="color-box" style="background-color: #008080;"></span>8:TEAL</div>
+                <div class="color-key-item"><span class="color-box" style="background-color: #FF00FF;"></span>9:MAGENTA</div>
+            </div>
         </div>
         
         <!-- Resizer -->
@@ -991,13 +994,6 @@ class Line(BaseDrawer):
                     </div>
                 </div>
                 
-                <!-- Color Key -->
-                <div class="color-key">
-                    <div class="key-title">COLOR MAPPING (0-9)</div>
-                    <div class="key-content" id="color-key-container">
-                        <!-- Color keys will be added dynamically -->
-                    </div>
-                </div>
                 
                 <!-- Status indicator - only kept this -->
                 <div class="status-indicator" id="status-indicator">RUNNING PYTHON CODE...</div>
@@ -1345,26 +1341,9 @@ class Line(BaseDrawer):
             }, 200); // Slightly longer delay before animation starts
         }
         
-        // Create color key
+        // We don't need this function anymore since we have a static color key
         function createColorKey() {
-            const container = document.getElementById('color-key-container');
-            container.innerHTML = ''; // Clear previous content
-            
-            Object.entries(COLOR_MAP).forEach(([value, color]) => {
-                const keyDiv = document.createElement('div');
-                keyDiv.className = 'key-color';
-                
-                const swatch = document.createElement('div');
-                swatch.className = 'color-swatch';
-                swatch.style.backgroundColor = color;
-                
-                const label = document.createElement('span');
-                label.textContent = value;
-                
-                keyDiv.appendChild(swatch);
-                keyDiv.appendChild(label);
-                container.appendChild(keyDiv);
-            });
+            // Color key is now static in the HTML
         }
         
         // Check if two grids have the same dimensions
