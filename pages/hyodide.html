@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pyodide Hy Example</title>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+</head>
+<body>
+    <h1>Pyodide with Hy Example</h1>
+    <button onclick="runHyCode()">Run Hy Code</button>
+    <pre id="output"></pre>
+
+    <script>
+        async function runHyCode() {
+            const outputElement = document.getElementById('output');
+            outputElement.textContent = 'Loading Pyodide...';
+
+            try {
+                let pyodide = await loadPyodide();
+
+                // Load the 'distutils' module
+                await pyodide.loadPackage('distutils');
+
+                // Load micropip to install packages from PyPI
+                await pyodide.loadPackage('micropip');
+                const micropip = pyodide.pyimport('micropip');
+
+                // Install hy from PyPI
+                await micropip.install('hy');
+
+                // Now you can use hy
+                const pythonCode = `
+import hy
+print("Hy has been successfully imported!")
+`;
+
+                let result = pyodide.runPython(pythonCode);
+                outputElement.textContent = result;
+            } catch (err) {
+                outputElement.textContent = 'Error: ' + err;
+            }
+        }
+    </script>
+</body>
+</html>
