@@ -95,17 +95,48 @@
             text-transform: uppercase;
         }
         
+        /* Editor tabs */
+        .editor-tabs {
+            display: flex;
+            background: var(--editor-header);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .editor-tab {
+            padding: 10px 20px;
+            color: var(--text-color);
+            cursor: pointer;
+            border-right: 1px solid var(--border-color);
+            transition: background-color 0.2s ease;
+            font-size: 14px;
+        }
+        
+        .editor-tab:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .editor-tab.active {
+            background-color: var(--editor-bg);
+            border-bottom: 2px solid var(--button-color);
+        }
+        
         .editor-container {
             position: relative;
             flex-grow: 1;
+            display: flex;
         }
         
-        #editor {
+        .editor-instance {
             width: 100%;
             height: 100%;
             position: absolute;
             top: 0;
             left: 0;
+            display: none;
+        }
+        
+        .editor-instance.active {
+            display: block;
         }
         
         /* Right Panel - Grid Viewer */
@@ -699,48 +730,167 @@
             <div class="editor-header">
                 <button class="run-button" id="run-button">RUN</button>
             </div>
+            <div class="editor-tabs">
+                <div class="editor-tab active" data-tab="solution">solution.py</div>
+                <div class="editor-tab" data-tab="library">library.py</div>
+            </div>
             <div class="editor-container">
-                <div id="editor">import numpy as np
+                <!-- Solution Editor -->
+                <div id="solution-editor" class="editor-instance active">import numpy as np
+from library import Grid, V, Color, Rectangle, Line, Circle, Checkerboard, Fill
 
-# This function will be called when you click RUN
-# It should return a list of lists of integers representing the grid
-# Color guide:
-# 0 = BLACK, 1 = BLUE, 2 = RED, 3 = GREEN, 4 = YELLOW
-# 5 = GRAY, 6 = PINK, 7 = ORANGE, 8 = TEAL, 9 = MAGENTA
+def create_grid() -> Grid:
+    # Create a Grid object with a specific size and background color
+    # V(x, y) is a 2D vector class for representing coordinates
+    size = V(x=10, y=10)
+    
+    # Create the grid with a background color
+    grid = Grid(
+        size=size,
+        color=Color.BLACK,  # Background color
+        layers=[]  # We'll add drawing layers to this list
+    )
+    
+    # Add a border rectangle
+    grid.layers.append(
+        Rectangle(
+            top_left=V(x=0, y=0),
+            bottom_right=V(x=size.x-1, y=size.y-1),
+            color=Color.GREEN,
+            fill=False  # Just the outline
+        )
+    )
+    
+    # Add a diagonal line
+    grid.layers.append(
+        Line(
+            start=V(x=0, y=0),
+            end=V(x=size.x-1, y=size.y-1),
+            color=Color.ORANGE
+        )
+    )
+    
+    return grid
+</div>
+                <!-- Library Editor -->
+                <div id="library-editor" class="editor-instance">from enum import Enum
 
-def create_grid():
-    # You can create grids from 3x3 up to 30x30
-    # The display will automatically adjust to the grid size
-    size = 10  # Try different sizes: 3, 5, 10, 15, 25, etc.
+import numpy as np
+from pydantic import BaseModel
+
+
+class V(BaseModel):
+    x: int
+    y: int
+
+
+class Color(int, Enum):
+    BLACK = 0
+    BLUE = 1
+    RED = 2
+    GREEN = 3
+    YELLOW = 4
+    GRAY = 5
+    PINK = 6
+    ORANGE = 7
+    TEAL = 8
+    MAGENTA = 9
+
+
+class BaseDrawer(BaseModel):
+    def apply(self, canvas: np.ndarray) -> np.ndarray:
+        raise NotImplementedError()
+
+
+class Grid(BaseModel):
+    size: V
+    color: Color
+    layers: list[BaseDrawer]
+
+    def render(self) -> list[list[int]]:
+        # canvas starts as all `-1` in the background
+        canvas = np.ones((self.size.y, self.size.x), dtype=np.int32) * -1
+        for layer in self.layers:
+            canvas = layer.apply(canvas)
+        # replace `-1` with the background color
+        mask = canvas == -1
+        canvas = self.color * mask + canvas * ~mask
+        return canvas.tolist()
+
+
+class Rectangle(BaseDrawer):
+    """Draw a rectangle on the canvas."""
+    top_left: V
+    bottom_right: V
+    color: Color
+    fill: bool = False
     
-    # Create a grid using NumPy (more efficient for larger grids)
-    grid = np.zeros((size, size), dtype=int)
-    
-    # Fill the grid with a pattern
-    for i in range(size):
-        for j in range(size):
-            # Checkerboard of 4 colors
-            if i < size//2:
-                if j < size//2:
-                    grid[i, j] = 1  # BLUE in top-left quadrant
-                else:
-                    grid[i, j] = 2  # RED in top-right quadrant
-            else:
-                if j < size//2:
-                    grid[i, j] = 3  # GREEN in bottom-left quadrant
-                else:
-                    grid[i, j] = 4  # YELLOW in bottom-right quadrant
+    def apply(self, canvas: np.ndarray) -> np.ndarray:
+        result = canvas.copy()
+        
+        # Extract coordinates
+        x1, y1 = self.top_left.x, self.top_left.y
+        x2, y2 = self.bottom_right.x, self.bottom_right.y
+        
+        # Ensure coordinates are in bounds
+        height, width = canvas.shape
+        x1 = max(0, min(x1, width - 1))
+        y1 = max(0, min(y1, height - 1))
+        x2 = max(0, min(x2, width - 1))
+        y2 = max(0, min(y2, height - 1))
+        
+        if self.fill:
+            # Fill the rectangle
+            result[y1:y2+1, x1:x2+1] = self.color
+        else:
+            # Draw only the border
+            # Top and bottom edges
+            result[y1, x1:x2+1] = self.color
+            result[y2, x1:x2+1] = self.color
+            # Left and right edges
+            result[y1:y2+1, x1] = self.color
+            result[y1:y2+1, x2] = self.color
             
-            # Add a border
-            if i == 0 or j == 0 or i == size-1 or j == size-1:
-                grid[i, j] = 0  # BLACK border
-            
-            # Add some diagonal elements
-            if i == j:
-                grid[i, j] = 7  # ORANGE diagonal
+        return result
+
+
+class Line(BaseDrawer):
+    """Draw a line on the canvas using Bresenham's algorithm."""
+    start: V
+    end: V
+    color: Color
     
-    # Convert NumPy array to list of lists before returning
-    return grid.tolist()
+    def apply(self, canvas: np.ndarray) -> np.ndarray:
+        result = canvas.copy()
+        
+        # Extract coordinates
+        x1, y1 = self.start.x, self.start.y
+        x2, y2 = self.end.x, self.end.y
+        
+        # Bresenham's Line Algorithm
+        dx = abs(x2 - x1)
+        dy = abs(y2 - y1)
+        sx = 1 if x1 < x2 else -1
+        sy = 1 if y1 < y2 else -1
+        err = dx - dy
+        
+        while True:
+            # Check if point is within canvas bounds
+            if 0 <= y1 < result.shape[0] and 0 <= x1 < result.shape[1]:
+                result[y1, x1] = self.color
+                
+            if x1 == x2 and y1 == y2:
+                break
+                
+            e2 = 2 * err
+            if e2 > -dy:
+                err -= dy
+                x1 += sx
+            if e2 < dx:
+                err += dx
+                y1 += sy
+                
+        return result
 </div>
             </div>
         </div>
@@ -876,34 +1026,91 @@ def create_grid():
         };
         
         // Global variables
-        let editor;
+        let solutionEditor;
+        let libraryEditor;
+        let currentEditor;
         let pyodide = null;
         let currentTask = null;
         let taskList = [];
         
-        // Initialize the editor
+        // Initialize the editors
         function initializeEditor() {
-            editor = ace.edit("editor");
-            editor.setTheme("ace/theme/monokai");
-            editor.session.setMode("ace/mode/python");
-            editor.setOptions({
+            // Initialize solution editor
+            solutionEditor = ace.edit("solution-editor");
+            solutionEditor.setTheme("ace/theme/monokai");
+            solutionEditor.session.setMode("ace/mode/python");
+            solutionEditor.setOptions({
                 fontSize: "14px",
                 showPrintMargin: false,
                 highlightActiveLine: true,
                 enableLiveAutocompletion: true
             });
             
-            // Add keyboard shortcut for running code
-            editor.commands.addCommand({
+            // Initialize library editor
+            libraryEditor = ace.edit("library-editor");
+            libraryEditor.setTheme("ace/theme/monokai");
+            libraryEditor.session.setMode("ace/mode/python");
+            libraryEditor.setOptions({
+                fontSize: "14px",
+                showPrintMargin: false,
+                highlightActiveLine: true,
+                enableLiveAutocompletion: true
+            });
+            
+            // Set current editor to solution by default
+            currentEditor = solutionEditor;
+            
+            // Add keyboard shortcut for running code to both editors
+            const runCommand = {
                 name: 'runCode',
                 bindKey: {win: 'Shift-Enter', mac: 'Shift-Enter'},
                 exec: function() {
                     runPythonCode();
                 }
-            });
+            };
+            
+            solutionEditor.commands.addCommand(runCommand);
+            libraryEditor.commands.addCommand(runCommand);
+            
+            // Set up tab switching
+            setupTabSwitching();
             
             // Show shortcut info in the debug output
             document.getElementById('debug-output').textContent = "Press Shift+Enter to run your code";
+        }
+        
+        // Setup tab switching functionality
+        function setupTabSwitching() {
+            const tabs = document.querySelectorAll('.editor-tab');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Get the tab name
+                    const tabName = tab.getAttribute('data-tab');
+                    
+                    // Deactivate all tabs and editors
+                    tabs.forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.editor-instance').forEach(editor => {
+                        editor.classList.remove('active');
+                    });
+                    
+                    // Activate the clicked tab and corresponding editor
+                    tab.classList.add('active');
+                    document.getElementById(`${tabName}-editor`).classList.add('active');
+                    
+                    // Set the current editor
+                    if (tabName === 'solution') {
+                        currentEditor = solutionEditor;
+                    } else if (tabName === 'library') {
+                        currentEditor = libraryEditor;
+                    }
+                    
+                    // Resize the editor for proper rendering
+                    if (currentEditor) {
+                        currentEditor.resize();
+                    }
+                });
+            });
         }
         
         // Function to get color from value
@@ -1388,7 +1595,19 @@ def create_grid():
                 loadingOverlay.classList.add('active');
                 
                 pyodide = await loadPyodide();
-                await pyodide.loadPackage('numpy');
+                await pyodide.loadPackage(['numpy', 'micropip']);
+                
+                // Install pydantic
+                await pyodide.runPython(`
+                    import micropip
+                    await micropip.install('pydantic')
+                `);
+                
+                // Import additional modules needed for module handling
+                await pyodide.runPython(`
+                    import importlib.util
+                    import importlib.machinery
+                `);
                 
                 // Initialize the code length measurement
                 await initializeCodeMeasurement();
@@ -1455,7 +1674,8 @@ def create_grid():
                 if (!pyodide) return; // Failed to initialize
             }
             
-            const code = editor.getValue();
+            const libraryCode = libraryEditor.getValue();
+            const solutionCode = solutionEditor.getValue();
             const button = document.getElementById('run-button');
             const loadingOverlay = document.getElementById('loading-overlay');
             const statusIndicator = document.getElementById('status-indicator');
@@ -1473,18 +1693,37 @@ def create_grid():
             debugOutput.textContent = "Running Python code...";
             
             try {
-                // Execute the code
-                pyodide.runPython(code);
+                // Execute the library code first
+                pyodide.runPython(`
+                    # Create library.py module
+                    import sys
+                    from pathlib import Path
+                    
+                    # Create a virtual file for the library
+                    library_code = ${JSON.stringify(libraryCode)}
+                    
+                    # Create the library module
+                    spec = importlib.util.spec_from_loader('library', 
+                                                           importlib.machinery.SourceFileLoader('library', 'library.py'))
+                    library = importlib.util.module_from_spec(spec)
+                    sys.modules['library'] = library
+                    
+                    # Execute the library code in the module's namespace
+                    exec(library_code, library.__dict__)
+                `);
                 
-                // Call the create_grid function
-                const result = pyodide.runPython('create_grid()');
+                // Then execute the solution code
+                pyodide.runPython(solutionCode);
                 
-                // Convert Python result to JavaScript
-                const gridData = result.toJs();
+                // Call the create_grid function to get the Grid object
+                const gridObject = pyodide.runPython('create_grid()');
                 
-                // Validate the result
+                // Call the render method to get the grid data
+                const gridData = pyodide.runPython('create_grid().render()').toJs();
+                
+                // Validate the grid data
                 if (!Array.isArray(gridData) || !gridData.length || !Array.isArray(gridData[0])) {
-                    throw new Error('Invalid grid format. Return value must be a 2D list of integers.');
+                    throw new Error('Invalid grid format. Grid.render() must return a 2D list of integers.');
                 }
                 
                 // Check if all elements are numbers
@@ -1508,11 +1747,12 @@ def create_grid():
                 // Update similarity score
                 updateSimilarityScore(gridData);
                 
-                // Measure and update code length
-                const codeLength = measureCodeLength(code);
-                document.getElementById('code-length').textContent = `${codeLength} tokens`;
+                // Measure and update code length - only count the solution code, not the library
+                const solutionLength = measureCodeLength(solutionCode);
+                const libraryLength = measureCodeLength(libraryCode);
+                document.getElementById('code-length').textContent = `${solutionLength} tokens`;
                 
-                debugOutput.textContent = `Code executed successfully! Generated grid size: ${gridData.length}x${gridData[0].length}`;
+                debugOutput.textContent = `Code executed successfully! Grid size: ${gridData.length}x${gridData[0].length}`;
             } catch (error) {
                 console.error('Error running Python code:', error);
                 debugOutput.textContent = `Error: ${error.message}`;
@@ -1583,9 +1823,12 @@ def create_grid():
                     editorPanel.style.flex = '0 0 ' + newWidth + 'px';
                 }
                 
-                // Force Ace editor to update its size
-                if (editor) {
-                    editor.resize();
+                // Force Ace editors to update their size
+                if (solutionEditor) {
+                    solutionEditor.resize();
+                }
+                if (libraryEditor) {
+                    libraryEditor.resize();
                 }
             });
             
@@ -1598,18 +1841,24 @@ def create_grid():
                     document.body.style.userSelect = '';
                     document.body.style.cursor = '';
                     
-                    // Make sure editor resizes properly
-                    if (editor) {
-                        editor.resize();
+                    // Make sure editors resize properly
+                    if (solutionEditor) {
+                        solutionEditor.resize();
+                    }
+                    if (libraryEditor) {
+                        libraryEditor.resize();
                     }
                 }
             });
             
             // Resize editor when window changes
             window.addEventListener('resize', () => {
-                // Resize editor to fit the new layout
-                if (editor) {
-                    editor.resize();
+                // Resize editors to fit the new layout
+                if (solutionEditor) {
+                    solutionEditor.resize();
+                }
+                if (libraryEditor) {
+                    libraryEditor.resize();
                 }
             });
         }
