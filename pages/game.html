@@ -1619,79 +1619,81 @@ function calculateSimilarity(userGrid, targetGrid) {
 
 // This functionality is now handled directly in the task comparison sections
 
-// Hard-coded list of evaluation and training files
+// Hard-coded list of task files
 // In a real server environment, you would fetch this dynamically
 function getTaskFiles() {
-    // Training files (easier tasks)
-    const trainingFiles = [
-        "007bbfb7", "00d62c1b", "017c7c7b", "025d127b", "045e512c", "0520fde7", 
-        "05269061", "05f2a901", "06df4c85", "08ed6ac7", "09629e4f", "0962bcdd", 
-        "0a938d79", "0b148d64", "0ca9ddb6", "0d3d703e", "0dfd9992", "0e206a2e", 
-        "10fcaaa3", "11852cab", "1190e5a7", "137eaa0f", "150deff5", "178fcbfb"
+    // All ARC task files
+    const taskFiles = [
+        // Training dataset (easier tasks)
+        { id: "007bbfb7", path: "/data/training/007bbfb7.json" },
+        { id: "00d62c1b", path: "/data/training/00d62c1b.json" },
+        { id: "017c7c7b", path: "/data/training/017c7c7b.json" },
+        { id: "025d127b", path: "/data/training/025d127b.json" },
+        { id: "045e512c", path: "/data/training/045e512c.json" },
+        { id: "0520fde7", path: "/data/training/0520fde7.json" },
+        { id: "05269061", path: "/data/training/05269061.json" },
+        { id: "05f2a901", path: "/data/training/05f2a901.json" },
+        { id: "06df4c85", path: "/data/training/06df4c85.json" },
+        { id: "08ed6ac7", path: "/data/training/08ed6ac7.json" },
+        { id: "09629e4f", path: "/data/training/09629e4f.json" },
+        { id: "0962bcdd", path: "/data/training/0962bcdd.json" },
+        
+        // Evaluation dataset (harder tasks)
+        { id: "00576224", path: "/data/evaluation/00576224.json" },
+        { id: "009d5c81", path: "/data/evaluation/009d5c81.json" },
+        { id: "00dbd492", path: "/data/evaluation/00dbd492.json" },
+        { id: "03560426", path: "/data/evaluation/03560426.json" },
+        { id: "05a7bcf2", path: "/data/evaluation/05a7bcf2.json" },
+        { id: "0607ce86", path: "/data/evaluation/0607ce86.json" },
+        { id: "0692e18c", path: "/data/evaluation/0692e18c.json" },
+        { id: "070dd51e", path: "/data/evaluation/070dd51e.json" },
+        { id: "08573cc6", path: "/data/evaluation/08573cc6.json" },
+        { id: "0934a4d8", path: "/data/evaluation/0934a4d8.json" },
+        { id: "09c534e7", path: "/data/evaluation/09c534e7.json" },
+        { id: "0a1d4ef5", path: "/data/evaluation/0a1d4ef5.json" }
     ];
 
-    // Evaluation files (harder tasks)
-    const evaluationFiles = [
-        "00576224", "009d5c81", "00dbd492", "03560426", "05a7bcf2", "0607ce86", 
-        "0692e18c", "070dd51e", "08573cc6", "0934a4d8", "09c534e7", "0a1d4ef5", 
-        "0a2355a6", "0b17323b", "0bb8deee", "0becf7df", "0c786b71", "0c9aba6e",
-        "0d87d2a6", "0e671a1a", "0f63c0b9", "103eff5b", "11e1fe23", "12422b43"
-    ];
-
-    return { trainingFiles, evaluationFiles };
+    return taskFiles;
 }
 
 // Load the task list
 async function loadTaskList() {
     try {
-        const { trainingFiles, evaluationFiles } = getTaskFiles();
-
-        // Map training files to task objects
-        const trainingTasks = trainingFiles.map(id => ({
-            id,
-            path: `/data/training/${id}.json`,
-            type: 'Training'
-        }));
-
-        // Map evaluation files to task objects
-        const evaluationTasks = evaluationFiles.map(id => ({
-            id,
-            path: `/data/evaluation/${id}.json`,
-            type: 'Evaluation'
-        }));
-
-        // Combine both lists, with training tasks first (they're easier)
-        taskList = [...trainingTasks, ...evaluationTasks];
+        // Get the task files
+        taskList = getTaskFiles();
     } catch (error) {
         console.error('Error loading task list:', error);
         // Fallback to a hardcoded first task for demo
-        taskList = [{
-            id: '007bbfb7',
-            path: '/data/training/007bbfb7.json',
-            type: 'Training'
-        }];
+        taskList = [
+            { id: '007bbfb7', path: '/data/training/007bbfb7.json' }
+        ];
     }
 
     // Create task groups in the dropdown
     const select = document.getElementById('task-select');
     select.innerHTML = ''; // Clear any existing options
 
-    // Add an optgroup for each type (Training/Evaluation)
-    const typeGroups = {};
+    // Add an optgroup for each dataset source (based on path)
+    const typeGroups = {
+        'Training': document.createElement('optgroup'),
+        'Evaluation': document.createElement('optgroup')
+    };
+    
+    typeGroups['Training'].label = 'Training Tasks';
+    typeGroups['Evaluation'].label = 'Evaluation Tasks';
+    
+    select.appendChild(typeGroups['Training']);
+    select.appendChild(typeGroups['Evaluation']);
 
     taskList.forEach(task => {
-        // Create the option group if it doesn't exist
-        if (!typeGroups[task.type]) {
-            typeGroups[task.type] = document.createElement('optgroup');
-            typeGroups[task.type].label = `${task.type} Tasks`;
-            select.appendChild(typeGroups[task.type]);
-        }
-
+        // Determine if this is a training or evaluation task based on path
+        const type = task.path.includes('/training/') ? 'Training' : 'Evaluation';
+        
         // Add the option to the appropriate group
         const option = document.createElement('option');
         option.value = task.id;
         option.textContent = task.id;
-        typeGroups[task.type].appendChild(option);
+        typeGroups[type].appendChild(option);
     });
 
     // Load the first task
@@ -1724,37 +1726,30 @@ async function loadTask(taskId) {
         // Clear previous task sections
         tasksContainer.innerHTML = '';
 
-        // Determine which collection to use based on task type
-        const isTraining = task.type.toLowerCase() === 'training';
-
         // Reset solution stats for the new task
         solutionStats.matchedInputs = 0;
         solutionStats.matchedOutputs = 0;
         solutionStats.taskStatus = 'Not started';
         
         // Count total inputs and outputs for stats tracking
-        if (isTraining && taskData.train) {
-            solutionStats.totalInputs = taskData.train.length;
-            solutionStats.totalOutputs = taskData.train.length;
-        } else if (!isTraining && taskData.test) {
-            solutionStats.totalInputs = taskData.test.length;
-            solutionStats.totalOutputs = taskData.test.length;
-        } else {
-            solutionStats.totalInputs = 0;
-            solutionStats.totalOutputs = 0;
+        let totalTasks = 0;
+        
+        // Both training and evaluation tasks can have train and test samples
+        if (taskData.train) {
+            totalTasks += taskData.train.length;
         }
+        if (taskData.test) {
+            totalTasks += taskData.test.length;
+        }
+        
+        solutionStats.totalInputs = totalTasks;
+        solutionStats.totalOutputs = totalTasks;
         
         // Update the solution stats display
         updateSolutionStatsDisplay();
 
-        // Setup a default target grid
-        let targetGrid;
-
-        // For training tasks, create task sections for all examples
-        if (isTraining && taskData.train && taskData.train.length > 0) {
-            // Use first example's output as the target grid for comparison
-            targetGrid = taskData.train[0].output;
-
+        // Load training examples first (if any)
+        if (taskData.train && taskData.train.length > 0) {
             // Create a task section for each training example
             taskData.train.forEach((example, idx) => {
                 const taskNumber = idx + 1;
@@ -1762,7 +1757,8 @@ async function loadTask(taskId) {
                     taskNumber, 
                     example.input, 
                     example.output, 
-                    true // isTraining
+                    true, // isTraining
+                    "Training"
                 );
 
                 // Add the section to the DOM
@@ -1774,20 +1770,20 @@ async function loadTask(taskId) {
                 // Add click handlers for the prediction and transform buttons
                 setupButtonHandlers(taskNumber, example.input);
             });
-        } 
-        // For evaluation tasks, load all test examples (inputs only)
-        else if (!isTraining && taskData.test && taskData.test.length > 0) {
-            // Use first example's output as target
-            targetGrid = taskData.test[0].output;
-
+        }
+        
+        // Load test examples (if any)
+        if (taskData.test && taskData.test.length > 0) {
             // Create a task section for each test example
             taskData.test.forEach((example, idx) => {
-                const taskNumber = idx + 1;
+                // Continue task numbering from where training examples left off
+                const taskNumber = (taskData.train ? taskData.train.length : 0) + idx + 1;
                 const { section, renderGrids } = createTaskSection(
                     taskNumber, 
                     example.input, 
-                    null, // No output shown for test examples
-                    false // Not a training task
+                    example.output, // Pass the output but it will be handled differently
+                    false, // Not a training example
+                    "Test"
                 );
 
                 // Add the section to the DOM
@@ -1797,10 +1793,8 @@ async function loadTask(taskId) {
                 renderGrids();
 
                 // Add click handlers for the prediction and transform buttons
-                setupButtonHandlers(taskNumber, example.input);
+                setupButtonHandlers(taskNumber, example.input, example.output);
             });
-        } else {
-            throw new Error(`Task ${taskId} has no examples`);
         }
 
         // Make sure the tasks container is visible
@@ -1811,13 +1805,10 @@ async function loadTask(taskId) {
         document.getElementById('code-length').textContent = "";
 
         // Update the debug output with task type info
-        const taskCount = isTraining ? taskData.train.length : taskData.test.length;
-        debugOutput.textContent = `${task.type} task ${taskId} loaded with ${taskCount} examples. Use the Run Prediction button for each task.`;
+        debugOutput.textContent = `Task ${taskId} loaded with ${taskData.train ? taskData.train.length : 0} training and ${taskData.test ? taskData.test.length : 0} test examples.`;
     } catch (error) {
         console.error('Error loading task:', error);
         debugOutput.textContent = `Error loading task: ${error.message}`;
-
-        // Nothing to do here, just hide the tasks container
 
         // Hide tasks container
         tasksContainer.style.display = 'none';
@@ -1825,7 +1816,7 @@ async function loadTask(taskId) {
 }
 
 // Set up button handlers for prediction and transform
-function setupButtonHandlers(taskNumber, inputGrid) {
+function setupButtonHandlers(taskNumber, inputGrid, actualOutput = null) {
     // The prediction button runs create_grid_N
     const predictionButton = document.getElementById(`run-prediction-${taskNumber}`);
     if (predictionButton) {
@@ -1957,9 +1948,12 @@ function setupButtonHandlers(taskNumber, inputGrid) {
                 createAxisLabels(outputGrid, `predicted-output-x-${safeIndex}`, `predicted-output-y-${safeIndex}`);
                 renderGridWithPopAnimation(outputGrid, `predicted-output-grid-${safeIndex}`);
 
-                // If this is a training task, calculate and show match percentage
+                // Check if this is a training or test task
                 const isTraining = transformButton.dataset.isTraining === 'true';
+                const isTest = transformButton.dataset.isTest === 'true';
+                
                 if (isTraining) {
+                    // TRAINING TASK - Show actual output and match percentage
                     // Get the actual output grid
                     const taskId = document.getElementById('task-select').value;
                     const task = taskList.find(t => t.id === taskId);
@@ -2032,8 +2026,81 @@ function setupButtonHandlers(taskNumber, inputGrid) {
                                 `Low match for Task ${taskNumber}. Try a different approach. (${matchPercent.toFixed(1)}% match)`;
                         }
                     }
+                } else if (isTest && actualOutput) {
+                    // TEST TASK - Don't show actual output, just similarity percentage
+                    // Calculate similarity but don't display the actual grid
+                    const matchPercent = calculateSimilarity(outputGrid, actualOutput);
+                    
+                    // Update the feedback area with the match percentage
+                    const feedbackArea = document.getElementById(`similarity-feedback-${safeIndex}`);
+                    if (feedbackArea) {
+                        // Create feedback message with similarity percentage
+                        let feedbackHTML = `<div style="font-size:16px;margin-bottom:10px;">Similarity: <span style="font-weight:bold;`;
+                        
+                        // Color based on match percentage
+                        if (matchPercent > 95) {
+                            feedbackHTML += `color:var(--button-color)">High (${matchPercent.toFixed(1)}%)</span></div>`;
+                        } else if (matchPercent > 60) {
+                            feedbackHTML += `color:#ffaa00">Medium (${matchPercent.toFixed(1)}%)</span></div>`;
+                        } else {
+                            feedbackHTML += `color:#ff5959">Low (${matchPercent.toFixed(1)}%)</span></div>`;
+                        }
+                        
+                        // Add tips based on similarity
+                        if (matchPercent < 50) {
+                            feedbackHTML += `<div style="font-size:13px;margin-top:10px;">Try a different approach.</div>`;
+                        }
+                        
+                        feedbackArea.innerHTML = feedbackHTML;
+                    }
+                    
+                    // Update match percentage in the task header
+                    const taskHeader = document.querySelector(`#task-section-${taskNumber} .task-header .task-stats`);
+                    const existingTransformMatchSpan = taskHeader.querySelector('.task-transform-match');
+                    
+                    if (existingTransformMatchSpan) {
+                        existingTransformMatchSpan.textContent = `Transform: ${matchPercent.toFixed(1)}%`;
+                        // Color the match based on percentage
+                        if (matchPercent > 95) {
+                            existingTransformMatchSpan.style.color = 'var(--button-color)'; // Green
+                        } else if (matchPercent > 50) {
+                            existingTransformMatchSpan.style.color = '#ffaa00'; // Orange
+                        } else {
+                            existingTransformMatchSpan.style.color = '#ff5959'; // Red
+                        }
+                    } else {
+                        // Create new match span if it doesn't exist
+                        const transformMatchSpan = document.createElement('span');
+                        transformMatchSpan.className = 'task-transform-match';
+                        transformMatchSpan.textContent = `Transform: ${matchPercent.toFixed(1)}%`;
+                        
+                        // Color the match based on percentage
+                        if (matchPercent > 95) {
+                            transformMatchSpan.style.color = 'var(--button-color)'; // Green
+                        } else if (matchPercent > 50) {
+                            transformMatchSpan.style.color = '#ffaa00'; // Orange
+                        } else {
+                            transformMatchSpan.style.color = '#ff5959'; // Red
+                        }
+                        
+                        taskHeader.appendChild(transformMatchSpan);
+                    }
+                    
+                    // Update solution stats for outputs
+                    if (matchPercent > 95) {
+                        // Mark this output as matched if it wasn't already
+                        const outputIdx = taskNumber - 1;
+                        if (outputIdx >= 0 && outputIdx < solutionStats.totalOutputs) {
+                            if (!window[`outputMatched${taskNumber}`]) {
+                                window[`outputMatched${taskNumber}`] = true;
+                                solutionStats.matchedOutputs++;
+                                updateSolutionStats();
+                            }
+                        }
+                    }
+
                 } else {
-                    // Flash the button to indicate success for eval tasks
+                    // Flash the button to indicate success
                     transformButton.style.backgroundColor = 'var(--button-active)';
                     setTimeout(() => {
                         transformButton.style.backgroundColor = '';
@@ -2275,8 +2342,8 @@ function createTrainingOutputComparison(taskNumber, safeIndex, isTraining) {
     };
 }
 
-// Create the output comparison section for evaluation tasks
-function createEvaluationOutputComparison(taskNumber, safeIndex, isTraining) {
+// Create the output comparison section for test tasks
+function createTestOutputComparison(taskNumber, safeIndex, actualOutput) {
     const outputComparison = document.createElement('div');
     outputComparison.className = 'grid-comparison';
 
@@ -2287,20 +2354,32 @@ function createEvaluationOutputComparison(taskNumber, safeIndex, isTraining) {
     runTransformButton.id = `run-transform-${taskNumber}`;
     runTransformButton.textContent = 'Run Transform';
     runTransformButton.dataset.taskNumber = taskNumber;
-    runTransformButton.dataset.isTraining = isTraining.toString();
+    runTransformButton.dataset.isTraining = 'false';
+    runTransformButton.dataset.isTest = 'true';
     runTransformButton.disabled = true; // Initially disabled
 
-    // Warning message
-    const warningMessage = document.createElement('div');
-    warningMessage.className = 'task-warning';
-    warningMessage.textContent = 'This is an evaluation task. The actual output is hidden. Run your transform to see your prediction.';
+    // Store the actual output for comparison (not shown to user)
+    if (actualOutput) {
+        runTransformButton.dataset.hasActualOutput = 'true';
+        // Store output dimensions to create a placeholder of the same size
+        runTransformButton.dataset.outputRows = actualOutput.length;
+        runTransformButton.dataset.outputCols = actualOutput[0].length;
+    } else {
+        runTransformButton.dataset.hasActualOutput = 'false';
+    }
 
-    // Spacer column (we don't show actual output in evaluation tasks)
-    const spacerColumn = document.createElement('div');
-    spacerColumn.className = 'grid-comparison-column';
-    spacerColumn.innerHTML = `
-        <div class="grid-comparison-title">Evaluation Task</div>
-        ${warningMessage.outerHTML}
+    // Info message
+    const infoMessage = document.createElement('div');
+    infoMessage.className = 'task-warning';
+    infoMessage.textContent = 'This is a test task. The actual output is hidden, but your solution will be checked for similarity.';
+
+    // Left column with similarity feedback (not showing actual output)
+    const feedbackColumn = document.createElement('div');
+    feedbackColumn.className = 'grid-comparison-column';
+    feedbackColumn.innerHTML = `
+        <div class="grid-comparison-title">Test Task</div>
+        ${infoMessage.outerHTML}
+        <div id="similarity-feedback-${safeIndex}" style="margin-top:15px;text-align:center;"></div>
     `;
 
     // Predicted output grid
@@ -2314,7 +2393,7 @@ function createEvaluationOutputComparison(taskNumber, safeIndex, isTraining) {
     );
 
     // Assemble output comparison
-    outputComparison.appendChild(spacerColumn);
+    outputComparison.appendChild(feedbackColumn);
     outputComparison.appendChild(predictedOutputColumn);
 
     return {
@@ -2324,7 +2403,7 @@ function createEvaluationOutputComparison(taskNumber, safeIndex, isTraining) {
 }
 
 // Create a task section for input-output pairs
-function createTaskSection(taskNumber, inputGrid, outputGrid, isTraining) {
+function createTaskSection(taskNumber, inputGrid, outputGrid, isTraining, taskType = "Training") {
     // Create the containing section
     const section = document.createElement('div');
     section.className = 'task-section';
@@ -2338,7 +2417,7 @@ function createTaskSection(taskNumber, inputGrid, outputGrid, isTraining) {
     const header = document.createElement('div');
     header.className = 'task-header';
     header.innerHTML = `
-        <div class="task-title">Task ${taskNumber}</div>
+        <div class="task-title">${taskType} Task ${taskNumber}</div>
         <div class="task-stats">
             <span class="task-size">Size: ${inputSize}</span>
             <span class="task-colors">Colors: ${inputColors}</span>
@@ -2362,13 +2441,15 @@ function createTaskSection(taskNumber, inputGrid, outputGrid, isTraining) {
     content.appendChild(inputSection.comparison);
     content.appendChild(createButtonContainer(inputSection.button));
 
-    // Create output comparison section if needed
-    if (isTraining && outputGrid) {
+    // Create output comparison section based on task type
+    if (taskType === "Training" && isTraining && outputGrid) {
+        // Show actual output for training tasks
         const outputSection = createTrainingOutputComparison(taskNumber, safeIndex, isTraining);
         content.appendChild(outputSection.comparison);
         content.appendChild(createButtonContainer(outputSection.button));
-    } else if (!isTraining) {
-        const outputSection = createEvaluationOutputComparison(taskNumber, safeIndex, isTraining);
+    } else if (taskType === "Test") {
+        // For test tasks, show the comparison section but don't show the actual output
+        const outputSection = createTestOutputComparison(taskNumber, safeIndex, outputGrid);
         content.appendChild(outputSection.comparison);
         content.appendChild(createButtonContainer(outputSection.button));
     }
@@ -2405,7 +2486,7 @@ function createTaskSection(taskNumber, inputGrid, outputGrid, isTraining) {
                     renderGrid(inputGrid, `actual-input-grid-${safeIndex}`);
 
                     // Render actual output grid if available for training tasks
-                    if (isTraining && outputGrid) {
+                    if (taskType === "Training" && isTraining && outputGrid) {
                         createAxisLabels(outputGrid, `actual-output-x-${safeIndex}`, `actual-output-y-${safeIndex}`);
                         renderGrid(outputGrid, `actual-output-grid-${safeIndex}`);
                     }
