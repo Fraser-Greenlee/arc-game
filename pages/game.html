@@ -759,6 +759,12 @@ h1 {
     font-size: 14px;
 }
 
+/* Special styling for task status */
+#task-status {
+    font-weight: bold;
+    transition: color 0.3s;
+}
+
 .results-footer {
     margin-top: 20px;
     padding-top: 10px;
@@ -1138,16 +1144,28 @@ class Line(BaseDrawer):
 
                 <!-- Bottom panels container -->
                 <div class="bottom-panels">
-                    <!-- Code Stats -->
+                    <!-- Solution Stats -->
                     <div class="results-panel">
-                        <div class="results-header">CODE STATS</div>
+                        <div class="results-header">SOLUTION STATS</div>
                         <div class="results-content">
                             <div class="results-row">
                                 <div class="results-label">Code Length</div>
                                 <div class="results-value" id="code-length">0 tokens</div>
                             </div>
+                            <div class="results-row">
+                                <div class="results-label">Inputs Matched</div>
+                                <div class="results-value" id="inputs-matched">0/0 (0%)</div>
+                            </div>
+                            <div class="results-row">
+                                <div class="results-label">Outputs Matched</div>
+                                <div class="results-value" id="outputs-matched">0/0 (0%)</div>
+                            </div>
+                            <div class="results-row">
+                                <div class="results-label">Task Status</div>
+                                <div class="results-value" id="task-status">Not started</div>
+                            </div>
                             <div class="results-row results-footer">
-                                <div class="results-note">💡 Use the "Run Prediction" and "Run Transform" buttons for each task.</div>
+                                <div class="results-note">💡 Match all inputs and outputs to solve the task.</div>
                             </div>
                         </div>
                     </div>
@@ -1188,6 +1206,15 @@ let currentEditor;
 let pyodide = null;
 let currentTask = null;
 let taskList = [];
+
+// Solution tracking variables
+let solutionStats = {
+    matchedInputs: 0,
+    totalInputs: 0,
+    matchedOutputs: 0,
+    totalOutputs: 0,
+    taskStatus: 'Not started'
+};
 
 // Initialize the editors
 function initializeEditor() {
@@ -1711,6 +1738,26 @@ async function loadTask(taskId) {
         // Determine which collection to use based on task type
         const isTraining = task.type.toLowerCase() === 'training';
 
+        // Reset solution stats for the new task
+        solutionStats.matchedInputs = 0;
+        solutionStats.matchedOutputs = 0;
+        solutionStats.taskStatus = 'Not started';
+        
+        // Count total inputs and outputs for stats tracking
+        if (isTraining && taskData.train) {
+            solutionStats.totalInputs = taskData.train.length;
+            solutionStats.totalOutputs = taskData.train.length;
+        } else if (!isTraining && taskData.test) {
+            solutionStats.totalInputs = taskData.test.length;
+            solutionStats.totalOutputs = taskData.test.length;
+        } else {
+            solutionStats.totalInputs = 0;
+            solutionStats.totalOutputs = 0;
+        }
+        
+        // Update the solution stats display
+        updateSolutionStatsDisplay();
+
         // Setup a default target grid
         let targetGrid;
 
@@ -1878,6 +1925,19 @@ function setupButtonHandlers(taskNumber, inputGrid) {
                 
                 // Reset the button text
                 predictionButton.textContent = 'Run Prediction';
+                
+                // Update solution stats for inputs
+                if (matchPercent > 95) {
+                    // Mark this input as matched if it wasn't already
+                    const inputIdx = taskNumber - 1;
+                    if (inputIdx >= 0 && inputIdx < solutionStats.totalInputs) {
+                        if (!window[`inputMatched${taskNumber}`]) {
+                            window[`inputMatched${taskNumber}`] = true;
+                            solutionStats.matchedInputs++;
+                            updateSolutionStats();
+                        }
+                    }
+                }
 
             } catch (error) {
                 console.error(`Error running prediction for task ${taskNumber}:`, error);
@@ -2034,6 +2094,19 @@ function setupButtonHandlers(taskNumber, inputGrid) {
                         
                         // Reset transform button text
                         transformButton.textContent = 'Run Transform';
+                        
+                        // Update solution stats for outputs
+                        if (matchPercent > 95) {
+                            // Mark this output as matched if it wasn't already
+                            const outputIdx = taskNumber - 1;
+                            if (outputIdx >= 0 && outputIdx < solutionStats.totalOutputs) {
+                                if (!window[`outputMatched${taskNumber}`]) {
+                                    window[`outputMatched${taskNumber}`] = true;
+                                    solutionStats.matchedOutputs++;
+                                    updateSolutionStats();
+                                }
+                            }
+                        }
 
                         // Update the debug output to indicate success or failure
                         if (matchPercent === 100) {
@@ -2440,6 +2513,47 @@ function countUniqueColors(gridData) {
         });
     });
     return colorSet.size;
+}
+
+// Update solution stats display
+function updateSolutionStatsDisplay() {
+    document.getElementById('inputs-matched').textContent = 
+        `${solutionStats.matchedInputs}/${solutionStats.totalInputs} (${Math.round((solutionStats.matchedInputs / solutionStats.totalInputs) * 100) || 0}%)`;
+    
+    document.getElementById('outputs-matched').textContent = 
+        `${solutionStats.matchedOutputs}/${solutionStats.totalOutputs} (${Math.round((solutionStats.matchedOutputs / solutionStats.totalOutputs) * 100) || 0}%)`;
+    
+    document.getElementById('task-status').textContent = solutionStats.taskStatus;
+    
+    // Style the task status based on completion
+    const taskStatusElement = document.getElementById('task-status');
+    if (solutionStats.taskStatus === 'Solved') {
+        taskStatusElement.style.color = 'var(--button-color)'; // Green
+        taskStatusElement.style.fontWeight = 'bold';
+    } else if (solutionStats.taskStatus === 'In progress') {
+        taskStatusElement.style.color = '#ffaa00'; // Orange
+        taskStatusElement.style.fontWeight = 'bold';
+    } else {
+        taskStatusElement.style.color = ''; // Default
+        taskStatusElement.style.fontWeight = 'normal';
+    }
+}
+
+// Update solution stats from input/output matches
+function updateSolutionStats() {
+    // Check if we've matched all inputs and outputs
+    if (solutionStats.matchedInputs === solutionStats.totalInputs && 
+        solutionStats.matchedOutputs === solutionStats.totalOutputs && 
+        solutionStats.totalInputs > 0) {
+        solutionStats.taskStatus = 'Solved';
+    } else if (solutionStats.matchedInputs > 0 || solutionStats.matchedOutputs > 0) {
+        solutionStats.taskStatus = 'In progress';
+    } else {
+        solutionStats.taskStatus = 'Not started';
+    }
+    
+    // Update the display
+    updateSolutionStatsDisplay();
 }
 
 // Run the Python code
