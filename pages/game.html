@@ -46,7 +46,6 @@ body {
     color: var(--text-color);
     line-height: 1.5;
     padding: 20px;
-    margin: 0;
     height: 100vh;
     letter-spacing: 0.5px;
 }
@@ -393,11 +392,8 @@ h1 {
 }
 
 .grid-cell {
-    /* Base size for cells - will be dynamically adjusted */
-    width: 30px;
-    height: 30px;
+    /* Base properties for all cells */
     border: 0;
-    margin: 1px;
     position: relative;
     transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -406,11 +402,13 @@ h1 {
 .grid-cell-small {  /* For grids 3x3 to 5x5 */
     width: 55px;
     height: 55px;
+    margin: 1px;
 }
 
 .grid-cell-medium { /* For grids 6x6 to 10x10 */
     width: 27px;
     height: 27px;
+    margin: 1px;
 }
 
 .grid-cell-large {  /* For grids 11x11 to 20x20 */
@@ -975,11 +973,6 @@ def to_output(grid: Grid) -> Grid:
     # Modify this function to implement the transformation you discover
     return grid
 
-# You can add more input grid predictions as needed:
-# def create_grid_4() -> Grid:
-#     """Predict the fourth input grid"""
-#     # ...
-#     return grid
 </div>
                 <!-- Library Editor -->
                 <div id="library-editor" class="editor-instance">from enum import Enum
@@ -1589,10 +1582,6 @@ function renderGridWithPopAnimation(gridData, containerId) {
     }
 }
 
-// We don't need this function anymore since we have a static color key
-function createColorKey() {
-    // Color key is now static in the HTML
-}
 
 // Check if two grids have the same dimensions
 function isSameDimensions(grid1, grid2) {
@@ -1819,7 +1808,7 @@ async function loadTask(taskId) {
 
         // Update code metrics - get current solution code
         const currentCode = solutionEditor ? solutionEditor.getValue() : "";
-        document.getElementById('code-length').textContent = `${measureCodeLength(currentCode)} tokens`;
+        document.getElementById('code-length').textContent = "";
 
         // Update the debug output with task type info
         const taskCount = isTraining ? taskData.train.length : taskData.test.length;
@@ -1842,31 +1831,12 @@ function setupButtonHandlers(taskNumber, inputGrid) {
     if (predictionButton) {
         predictionButton.addEventListener('click', async () => {
             try {
-                // First get and execute the current solution code
+                // First get the current solution code and library code
                 const solutionCode = solutionEditor.getValue();
                 const libraryCode = libraryEditor.getValue();
 
-                // Make sure library is properly loaded
-                pyodide.runPython(`
-                    # Create library.py module
-                    import sys
-                    from pathlib import Path
-
-                    # Create a virtual file for the library
-                    library_code = ${JSON.stringify(libraryCode)}
-
-                    # Create the library module
-                    spec = importlib.util.spec_from_loader('library', 
-                                                            importlib.machinery.SourceFileLoader('library', 'library.py'))
-                    library = importlib.util.module_from_spec(spec)
-                    sys.modules['library'] = library
-
-                    # Execute the library code in the module's namespace
-                    exec(library_code, library.__dict__)
-                `);
-
-                // Execute the solution code to make all functions available
-                pyodide.runPython(solutionCode);
+                // Load the modules
+                loadPythonModules(libraryCode, solutionCode);
 
                 // Try to run the create_grid function for this task
                 const funcName = `create_grid_${taskNumber}`;
@@ -1963,27 +1933,8 @@ function setupButtonHandlers(taskNumber, inputGrid) {
                 const solutionCode = solutionEditor.getValue();
                 const libraryCode = libraryEditor.getValue();
 
-                // Make sure library is properly loaded
-                pyodide.runPython(`
-                    # Create library.py module
-                    import sys
-                    from pathlib import Path
-
-                    # Create a virtual file for the library
-                    library_code = ${JSON.stringify(libraryCode)}
-
-                    # Create the library module
-                    spec = importlib.util.spec_from_loader('library', 
-                                                            importlib.machinery.SourceFileLoader('library', 'library.py'))
-                    library = importlib.util.module_from_spec(spec)
-                    sys.modules['library'] = library
-
-                    # Execute the library code in the module's namespace
-                    exec(library_code, library.__dict__)
-                `);
-
-                // Execute the solution code to make all functions available
-                pyodide.runPython(solutionCode);
+                // Load the modules
+                loadPythonModules(libraryCode, solutionCode);
 
                 // Check that the to_output function exists
                 const hasFunction = pyodide.runPython(`'to_output' in globals()`);
@@ -1992,52 +1943,10 @@ function setupButtonHandlers(taskNumber, inputGrid) {
                     throw new Error('Function to_output not defined in your code.');
                 }
 
-                // Convert the JavaScript grid to a Python grid
-                const pyInputGrid = pyodide.runPython(`
-                    from library import Grid, V, Color
-
-                    # Convert JS array to Grid object
-                    def array_to_grid(data):
-                        if not data or len(data) == 0 or len(data[0]) == 0:
-                            raise ValueError("Invalid grid data")
-
-                        height = len(data)
-                        width = len(data[0])
-
-                        # For simplicity, we'll use the first color as background
-                        bg_color = data[0][0]
-
-                        grid = Grid(
-                            size=V(x=width, y=height),
-                            color=bg_color,
-                            layers=[]
-                        )
-
-                        # Add pixels that differ from background
-                        from library import Rectangle
-                        for y in range(height):
-                            for x in range(width):
-                                if data[y][x] != bg_color:
-                                    grid.layers.append(
-                                        Rectangle(
-                                            top_left=V(x=x, y=y),
-                                            bottom_right=V(x=x, y=y),
-                                            color=data[y][x],
-                                            fill=True
-                                        )
-                                    )
-
-                        return grid
-
-                    # Convert the input grid
-                    input_grid = array_to_grid(${JSON.stringify(storedInputGrid)})
-                    input_grid
-                `);
-
                 // Run the to_output function on the input grid
                 const outputGrid = pyodide.runPython(`
                     # Apply the to_output function to the grid
-                    result_grid = to_output(input_grid)
+                    result_grid = to_output(create_grid_${taskNumber}())
 
                     # Render to get the 2D array
                     result_grid.render()
@@ -2179,6 +2088,31 @@ async function initializePyodide() {
     }
 }
 
+// Load the library and solution code into Pyodide
+function loadPythonModules(libraryCode, solutionCode) {
+    // Create library.py module
+    pyodide.runPython(`
+        # Create library.py module
+        import sys
+        from pathlib import Path
+
+        # Create a virtual file for the library
+        library_code = ${JSON.stringify(libraryCode)}
+
+        # Create the library module
+        spec = importlib.util.spec_from_loader('library', 
+                                              importlib.machinery.SourceFileLoader('library', 'library.py'))
+        library = importlib.util.module_from_spec(spec)
+        sys.modules['library'] = library
+
+        # Execute the library code in the module's namespace
+        exec(library_code, library.__dict__)
+    `);
+
+    // Execute the solution code to make all functions available
+    pyodide.runPython(solutionCode);
+}
+
 // Initialize the Python code for measuring code length
 async function initializeCodeMeasurement() {
     // Load the ast module for code analysis
@@ -2222,6 +2156,173 @@ function measureCodeLength(code) {
     }
 }
 
+// Helper function to create a grid wrapper
+function createGridWrapper(title, gridId, xLabelsId, yLabelsId) {
+    return `
+        <div class="grid-comparison-title">${title}</div>
+        <div class="grid-wrapper">
+            <div class="grid-inner">
+                <div class="origin-marker"></div>
+                <div class="origin-label">0</div>
+                <div class="axis-name x-name">X</div>
+                <div class="axis-name y-name">Y</div>
+                <div class="x-arrow-right"></div>
+                <div class="y-arrow-down"></div>
+                <div class="axis-labels x-labels" id="${xLabelsId}"></div>
+                <div class="axis-labels y-labels" id="${yLabelsId}"></div>
+                <div class="grid" id="${gridId}"></div>
+            </div>
+        </div>
+    `;
+}
+
+// Helper function to create a button container
+function createButtonContainer(button) {
+    const container = document.createElement('div');
+    container.style.display = 'flex';
+    container.style.justifyContent = 'center';
+    container.style.width = '100%';
+    container.style.margin = '10px 0';
+    container.appendChild(button);
+    return container;
+}
+
+// Create the input comparison section
+function createInputComparison(taskNumber, safeIndex) {
+    const inputComparison = document.createElement('div');
+    inputComparison.className = 'grid-comparison';
+
+    // The "run prediction" button
+    const runPredictionButton = document.createElement('button');
+    runPredictionButton.type = 'button';
+    runPredictionButton.className = 'run-transform-button';
+    runPredictionButton.id = `run-prediction-${taskNumber}`;
+    runPredictionButton.textContent = 'Run Prediction';
+    runPredictionButton.dataset.taskNumber = taskNumber;
+
+    // Actual input grid
+    const actualInputColumn = document.createElement('div');
+    actualInputColumn.className = 'grid-comparison-column';
+    actualInputColumn.innerHTML = createGridWrapper(
+        'Actual Input',
+        `actual-input-grid-${safeIndex}`,
+        `actual-input-x-${safeIndex}`,
+        `actual-input-y-${safeIndex}`
+    );
+
+    // Predicted input grid
+    const predictedInputColumn = document.createElement('div');
+    predictedInputColumn.className = 'grid-comparison-column';
+    predictedInputColumn.innerHTML = createGridWrapper(
+        'Your Prediction',
+        `predicted-input-grid-${safeIndex}`,
+        `predicted-input-x-${safeIndex}`,
+        `predicted-input-y-${safeIndex}`
+    );
+
+    // Assemble input comparison section
+    inputComparison.appendChild(actualInputColumn);
+    inputComparison.appendChild(predictedInputColumn);
+
+    return {
+        comparison: inputComparison,
+        button: runPredictionButton
+    };
+}
+
+// Create the output comparison section for training tasks
+function createTrainingOutputComparison(taskNumber, safeIndex, isTraining) {
+    const outputComparison = document.createElement('div');
+    outputComparison.className = 'grid-comparison';
+
+    // The "run transform" button
+    const runTransformButton = document.createElement('button');
+    runTransformButton.type = 'button';
+    runTransformButton.className = 'run-transform-button';
+    runTransformButton.id = `run-transform-${taskNumber}`;
+    runTransformButton.textContent = 'Run Transform';
+    runTransformButton.dataset.taskNumber = taskNumber;
+    runTransformButton.dataset.isTraining = isTraining.toString();
+    runTransformButton.disabled = true; // Initially disabled
+
+    // Actual output grid
+    const actualOutputColumn = document.createElement('div');
+    actualOutputColumn.className = 'grid-comparison-column';
+    actualOutputColumn.innerHTML = createGridWrapper(
+        'Actual Output',
+        `actual-output-grid-${safeIndex}`,
+        `actual-output-x-${safeIndex}`,
+        `actual-output-y-${safeIndex}`
+    );
+
+    // Predicted output grid
+    const predictedOutputColumn = document.createElement('div');
+    predictedOutputColumn.className = 'grid-comparison-column';
+    predictedOutputColumn.innerHTML = createGridWrapper(
+        'Your Transform',
+        `predicted-output-grid-${safeIndex}`,
+        `predicted-output-x-${safeIndex}`,
+        `predicted-output-y-${safeIndex}`
+    );
+
+    // Assemble output comparison
+    outputComparison.appendChild(actualOutputColumn);
+    outputComparison.appendChild(predictedOutputColumn);
+
+    return {
+        comparison: outputComparison,
+        button: runTransformButton
+    };
+}
+
+// Create the output comparison section for evaluation tasks
+function createEvaluationOutputComparison(taskNumber, safeIndex, isTraining) {
+    const outputComparison = document.createElement('div');
+    outputComparison.className = 'grid-comparison';
+
+    // The "run transform" button
+    const runTransformButton = document.createElement('button');
+    runTransformButton.type = 'button';
+    runTransformButton.className = 'run-transform-button';
+    runTransformButton.id = `run-transform-${taskNumber}`;
+    runTransformButton.textContent = 'Run Transform';
+    runTransformButton.dataset.taskNumber = taskNumber;
+    runTransformButton.dataset.isTraining = isTraining.toString();
+    runTransformButton.disabled = true; // Initially disabled
+
+    // Warning message
+    const warningMessage = document.createElement('div');
+    warningMessage.className = 'task-warning';
+    warningMessage.textContent = 'This is an evaluation task. The actual output is hidden. Run your transform to see your prediction.';
+
+    // Spacer column (we don't show actual output in evaluation tasks)
+    const spacerColumn = document.createElement('div');
+    spacerColumn.className = 'grid-comparison-column';
+    spacerColumn.innerHTML = `
+        <div class="grid-comparison-title">Evaluation Task</div>
+        ${warningMessage.outerHTML}
+    `;
+
+    // Predicted output grid
+    const predictedOutputColumn = document.createElement('div');
+    predictedOutputColumn.className = 'grid-comparison-column';
+    predictedOutputColumn.innerHTML = createGridWrapper(
+        'Your Transform',
+        `predicted-output-grid-${safeIndex}`,
+        `predicted-output-x-${safeIndex}`,
+        `predicted-output-y-${safeIndex}`
+    );
+
+    // Assemble output comparison
+    outputComparison.appendChild(spacerColumn);
+    outputComparison.appendChild(predictedOutputColumn);
+
+    return {
+        comparison: outputComparison,
+        button: runTransformButton
+    };
+}
+
 // Create a task section for input-output pairs
 function createTaskSection(taskNumber, inputGrid, outputGrid, isTraining) {
     // Create the containing section
@@ -2256,208 +2357,20 @@ function createTaskSection(taskNumber, inputGrid, outputGrid, isTraining) {
     // Generate unique IDs for all grids
     const safeIndex = taskNumber.toString().replace(/[^a-zA-Z0-9-]/g, '-');
 
-    // Input comparison (actual vs. prediction)
-    const inputComparison = document.createElement('div');
-    inputComparison.className = 'grid-comparison';
+    // Create the input comparison section
+    const inputSection = createInputComparison(taskNumber, safeIndex);
+    content.appendChild(inputSection.comparison);
+    content.appendChild(createButtonContainer(inputSection.button));
 
-    // The "run prediction" button
-    const runPredictionButton = document.createElement('button');
-    runPredictionButton.type = 'button';
-    runPredictionButton.className = 'run-transform-button';
-    runPredictionButton.id = `run-prediction-${taskNumber}`;
-    runPredictionButton.textContent = 'Run Prediction';
-    runPredictionButton.dataset.taskNumber = taskNumber;
-
-    // Actual input grid
-    const actualInputColumn = document.createElement('div');
-    actualInputColumn.className = 'grid-comparison-column';
-    actualInputColumn.innerHTML = `
-        <div class="grid-comparison-title">Actual Input</div>
-        <div class="grid-wrapper">
-            <div class="grid-inner">
-                <div class="origin-marker"></div>
-                <div class="origin-label">0</div>
-                <div class="axis-name x-name">X</div>
-                <div class="axis-name y-name">Y</div>
-                <div class="x-arrow-right"></div>
-                <div class="y-arrow-down"></div>
-                <div class="axis-labels x-labels" id="actual-input-x-${safeIndex}"></div>
-                <div class="axis-labels y-labels" id="actual-input-y-${safeIndex}"></div>
-                <div class="grid" id="actual-input-grid-${safeIndex}"></div>
-            </div>
-        </div>
-    `;
-
-    // Predicted input grid
-    const predictedInputColumn = document.createElement('div');
-    predictedInputColumn.className = 'grid-comparison-column';
-    predictedInputColumn.innerHTML = `
-        <div class="grid-comparison-title">Your Prediction</div>
-        <div class="grid-wrapper">
-            <div class="grid-inner">
-                <div class="origin-marker"></div>
-                <div class="origin-label">0</div>
-                <div class="axis-name x-name">X</div>
-                <div class="axis-name y-name">Y</div>
-                <div class="x-arrow-right"></div>
-                <div class="y-arrow-down"></div>
-                <div class="axis-labels x-labels" id="predicted-input-x-${safeIndex}"></div>
-                <div class="axis-labels y-labels" id="predicted-input-y-${safeIndex}"></div>
-                <div class="grid" id="predicted-input-grid-${safeIndex}"></div>
-            </div>
-        </div>
-    `;
-
-    // Create button container and add button
-    const buttonContainer = document.createElement('div');
-    buttonContainer.style.display = 'flex';
-    buttonContainer.style.justifyContent = 'center';
-    buttonContainer.style.width = '100%';
-    buttonContainer.style.margin = '10px 0';
-    buttonContainer.appendChild(runPredictionButton);
-
-    // Assemble input comparison section
-    inputComparison.appendChild(actualInputColumn);
-    inputComparison.appendChild(predictedInputColumn);
-
-    // Add input comparison to content
-    content.appendChild(inputComparison);
-    content.appendChild(buttonContainer);
-
-    // Create output comparison section if this is a training task or we have output
+    // Create output comparison section if needed
     if (isTraining && outputGrid) {
-        const outputComparison = document.createElement('div');
-        outputComparison.className = 'grid-comparison';
-
-        // The "run transform" button
-        const runTransformButton = document.createElement('button');
-        runTransformButton.type = 'button';
-        runTransformButton.className = 'run-transform-button';
-        runTransformButton.id = `run-transform-${taskNumber}`;
-        runTransformButton.textContent = 'Run Transform';
-        runTransformButton.dataset.taskNumber = taskNumber;
-        runTransformButton.dataset.isTraining = isTraining.toString();
-        runTransformButton.disabled = true; // Initially disabled until input prediction is run
-
-        // Actual output grid
-        const actualOutputColumn = document.createElement('div');
-        actualOutputColumn.className = 'grid-comparison-column';
-        actualOutputColumn.innerHTML = `
-            <div class="grid-comparison-title">Actual Output</div>
-            <div class="grid-wrapper">
-                <div class="grid-inner">
-                    <div class="origin-marker"></div>
-                    <div class="origin-label">0</div>
-                    <div class="axis-name x-name">X</div>
-                    <div class="axis-name y-name">Y</div>
-                    <div class="x-arrow-right"></div>
-                    <div class="y-arrow-down"></div>
-                    <div class="axis-labels x-labels" id="actual-output-x-${safeIndex}"></div>
-                    <div class="axis-labels y-labels" id="actual-output-y-${safeIndex}"></div>
-                    <div class="grid" id="actual-output-grid-${safeIndex}"></div>
-                </div>
-            </div>
-        `;
-
-        // Predicted output grid
-        const predictedOutputColumn = document.createElement('div');
-        predictedOutputColumn.className = 'grid-comparison-column';
-        predictedOutputColumn.innerHTML = `
-            <div class="grid-comparison-title">Your Transform</div>
-            <div class="grid-wrapper">
-                <div class="grid-inner">
-                    <div class="origin-marker"></div>
-                    <div class="origin-label">0</div>
-                    <div class="axis-name x-name">X</div>
-                    <div class="axis-name y-name">Y</div>
-                    <div class="x-arrow-right"></div>
-                    <div class="y-arrow-down"></div>
-                    <div class="axis-labels x-labels" id="predicted-output-x-${safeIndex}"></div>
-                    <div class="axis-labels y-labels" id="predicted-output-y-${safeIndex}"></div>
-                    <div class="grid" id="predicted-output-grid-${safeIndex}"></div>
-                </div>
-            </div>
-        `;
-
-        // Create button container and add transform button
-        const transformButtonContainer = document.createElement('div');
-        transformButtonContainer.style.display = 'flex';
-        transformButtonContainer.style.justifyContent = 'center';
-        transformButtonContainer.style.width = '100%';
-        transformButtonContainer.style.margin = '10px 0';
-        transformButtonContainer.appendChild(runTransformButton);
-
-        // Assemble output comparison
-        outputComparison.appendChild(actualOutputColumn);
-        outputComparison.appendChild(predictedOutputColumn);
-
-        // Add output comparison to content
-        content.appendChild(outputComparison);
-        content.appendChild(transformButtonContainer);
+        const outputSection = createTrainingOutputComparison(taskNumber, safeIndex, isTraining);
+        content.appendChild(outputSection.comparison);
+        content.appendChild(createButtonContainer(outputSection.button));
     } else if (!isTraining) {
-        // For evaluation tasks, we still show the output prediction section
-        // but hide the actual output (since it's a test)
-        const outputComparison = document.createElement('div');
-        outputComparison.className = 'grid-comparison';
-
-        // The "run transform" button
-        const runTransformButton = document.createElement('button');
-        runTransformButton.type = 'button';
-        runTransformButton.className = 'run-transform-button';
-        runTransformButton.id = `run-transform-${taskNumber}`;
-        runTransformButton.textContent = 'Run Transform';
-        runTransformButton.dataset.taskNumber = taskNumber;
-        runTransformButton.dataset.isTraining = isTraining.toString();
-        runTransformButton.disabled = true; // Initially disabled
-
-        // Warning message
-        const warningMessage = document.createElement('div');
-        warningMessage.className = 'task-warning';
-        warningMessage.textContent = 'This is an evaluation task. The actual output is hidden. Run your transform to see your prediction.';
-
-        // Spacer column (we don't show actual output in evaluation tasks)
-        const spacerColumn = document.createElement('div');
-        spacerColumn.className = 'grid-comparison-column';
-        spacerColumn.innerHTML = `
-            <div class="grid-comparison-title">Evaluation Task</div>
-            ${warningMessage.outerHTML}
-        `;
-
-        // Predicted output grid
-        const predictedOutputColumn = document.createElement('div');
-        predictedOutputColumn.className = 'grid-comparison-column';
-        predictedOutputColumn.innerHTML = `
-            <div class="grid-comparison-title">Your Transform</div>
-            <div class="grid-wrapper">
-                <div class="grid-inner">
-                    <div class="origin-marker"></div>
-                    <div class="origin-label">0</div>
-                    <div class="axis-name x-name">X</div>
-                    <div class="axis-name y-name">Y</div>
-                    <div class="x-arrow-right"></div>
-                    <div class="y-arrow-down"></div>
-                    <div class="axis-labels x-labels" id="predicted-output-x-${safeIndex}"></div>
-                    <div class="axis-labels y-labels" id="predicted-output-y-${safeIndex}"></div>
-                    <div class="grid" id="predicted-output-grid-${safeIndex}"></div>
-                </div>
-            </div>
-        `;
-
-        // Create button container and add transform button
-        const transformButtonContainer = document.createElement('div');
-        transformButtonContainer.style.display = 'flex';
-        transformButtonContainer.style.justifyContent = 'center';
-        transformButtonContainer.style.width = '100%';
-        transformButtonContainer.style.margin = '10px 0';
-        transformButtonContainer.appendChild(runTransformButton);
-
-        // Assemble output comparison
-        outputComparison.appendChild(spacerColumn);
-        outputComparison.appendChild(predictedOutputColumn);
-
-        // Add output comparison to content
-        content.appendChild(outputComparison);
-        content.appendChild(transformButtonContainer);
+        const outputSection = createEvaluationOutputComparison(taskNumber, safeIndex, isTraining);
+        content.appendChild(outputSection.comparison);
+        content.appendChild(createButtonContainer(outputSection.button));
     }
 
     // Add toggle functionality
@@ -2584,27 +2497,8 @@ async function runPythonCode(isInitialLoad = false) {
     }
 
     try {
-        // Execute the library code first
-        pyodide.runPython(`
-            # Create library.py module
-            import sys
-            from pathlib import Path
-
-            # Create a virtual file for the library
-            library_code = ${JSON.stringify(libraryCode)}
-
-            # Create the library module
-            spec = importlib.util.spec_from_loader('library', 
-                                                    importlib.machinery.SourceFileLoader('library', 'library.py'))
-            library = importlib.util.module_from_spec(spec)
-            sys.modules['library'] = library
-
-            # Execute the library code in the module's namespace
-            exec(library_code, library.__dict__)
-        `);
-
-        // Then execute the solution code
-        pyodide.runPython(solutionCode);
+        // Load the Python modules
+        loadPythonModules(libraryCode, solutionCode);
 
         // Check if solution code has basic syntax errors
         try {
@@ -2629,13 +2523,8 @@ async function runPythonCode(isInitialLoad = false) {
             }
         }
 
-        // We no longer need to search for additional visualization grids
-        // All grid functions (create_grid_1, create_grid_2, etc.) are now handled 
-        // by the task-specific buttons in each task panel
-
         // Measure and update code length - only count the solution code, not the library
         const solutionLength = measureCodeLength(solutionCode);
-        const libraryLength = measureCodeLength(libraryCode);
         document.getElementById('code-length').textContent = `${solutionLength} tokens`;
 
         debugOutput.textContent = "Code executed successfully! Use the Run Prediction and Run Transform buttons for each task.";
@@ -2765,7 +2654,6 @@ function initializeTaskSelector() {
 async function initialize() {
     // Initialize components
     initializeEditor();
-    createColorKey();
     initializeResizer();
     initializeTaskSelector();
 
