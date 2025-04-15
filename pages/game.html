@@ -590,6 +590,119 @@
             border: 1px solid var(--border-color);
         }
         
+        /* Task Section Styles */
+        .task-section {
+            width: 100%;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            background-color: var(--editor-bg);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--header-bg);
+            color: var(--title-color);
+            padding: 8px 12px;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .task-header:hover {
+            background-color: rgba(42, 65, 102, 0.8);
+        }
+        
+        .task-title {
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .task-stats {
+            font-size: 12px;
+            color: var(--text-color);
+            display: flex;
+            gap: 12px;
+        }
+        
+        .task-content {
+            padding: 0;
+            max-height: 1200px;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out;
+        }
+        
+        .task-content.collapsed {
+            max-height: 0;
+        }
+        
+        /* Grid Comparison Row */
+        .grid-comparison {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .grid-comparison-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .grid-comparison-title {
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            color: var(--title-color);
+        }
+        
+        /* Run Transform Button */
+        .run-transform-button {
+            background-color: var(--button-color);
+            color: var(--bg-color);
+            border: none;
+            padding: 5px 15px;
+            margin: 10px 0;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: inherit;
+            text-transform: uppercase;
+            transition: background-color 0.2s;
+        }
+        
+        .run-transform-button:hover {
+            background-color: var(--button-hover);
+        }
+        
+        .run-transform-button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+        
+        /* Task Warning */
+        .task-warning {
+            background-color: rgba(255, 200, 0, 0.1);
+            color: #ffcc00;
+            padding: 8px 12px;
+            font-size: 12px;
+            margin: 10px 0;
+            border-left: 3px solid #ffcc00;
+        }
+        
+        .tasks-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            margin-bottom: 20px;
+            padding: 0 20px;
+        }
+        
         /* Bottom panels container */
         .bottom-panels {
             display: flex;
@@ -770,38 +883,93 @@
                 <div id="solution-editor" class="editor-instance active">import numpy as np
 from library import Grid, V, Color, Rectangle, Line
 
-def create_grid() -> Grid:
-    # Create a Grid object with a specific size and background color
-    # V(x, y) is a 2D vector class for representing coordinates
-    size = V(x=10, y=10)
+def create_grid_1() -> Grid:
+    """Predict the first input grid"""
+    # Create a 3x3 grid with a diagonal green line
+    size = V(x=3, y=3)
     
-    # Create the grid with a background color
     grid = Grid(
         size=size,
-        color=Color.BLACK,  # Background color
-        layers=[]  # We'll add drawing layers to this list
-    )
-    
-    # Add a border rectangle
-    grid.layers.append(
-        Rectangle(
-            top_left=V(x=0, y=0),
-            bottom_right=V(x=size.x-1, y=size.y-1),
-            color=Color.GREEN,
-            fill=False  # Just the outline
-        )
+        color=Color.BLACK,
+        layers=[]
     )
     
     # Add a diagonal line
     grid.layers.append(
         Line(
             start=V(x=0, y=0),
-            end=V(x=size.x-1, y=size.y-1),
-            color=Color.ORANGE
+            end=V(x=2, y=2),
+            color=Color.GREEN
         )
     )
     
     return grid
+
+def create_grid_2() -> Grid:
+    """Predict the second input grid"""
+    # Create a 3x3 grid with a diagonal green line
+    size = V(x=3, y=3)
+    
+    grid = Grid(
+        size=size,
+        color=Color.BLACK,
+        layers=[]
+    )
+    
+    # Add a diagonal line
+    grid.layers.append(
+        Line(
+            start=V(x=0, y=0),
+            end=V(x=2, y=2),
+            color=Color.GREEN
+        )
+    )
+    
+    return grid
+
+def create_grid_3() -> Grid:
+    """Predict the third input grid"""
+    # Create a 3x3 grid with a diagonal green line
+    size = V(x=3, y=3)
+    
+    grid = Grid(
+        size=size,
+        color=Color.BLACK,
+        layers=[]
+    )
+    
+    # Add a diagonal line
+    grid.layers.append(
+        Line(
+            start=V(x=0, y=0),
+            end=V(x=2, y=2),
+            color=Color.GREEN
+        )
+    )
+    
+    return grid
+
+def to_output(grid: Grid) -> Grid:
+    """Transform an input grid to match the expected output pattern
+    
+    This function takes an input grid and applies a transformation to 
+    produce the corresponding output grid according to the task pattern.
+    
+    Args:
+        grid: The input Grid object
+        
+    Returns:
+        A new Grid object representing the predicted output
+    """
+    # Default implementation: just return the same grid
+    # Modify this function to implement the transformation you discover
+    return grid
+
+# You can add more input grid predictions as needed:
+# def create_grid_4() -> Grid:
+#     """Predict the fourth input grid"""
+#     # ...
+#     return grid
 </div>
                 <!-- Library Editor -->
                 <div id="library-editor" class="editor-instance">from enum import Enum
@@ -951,66 +1119,14 @@ class Line(BaseDrawer):
             </div>
             <div class="grid-content">
                 
-                <!-- Grid Container -->
-                <div class="grid-container">
-                    <!-- Your Result Grid -->
-                    <div class="grid-section">
-                        <div class="grid-title">YOUR RESULT</div>
-                        <div class="grid-wrapper">
-                            <!-- Loading overlay -->
-                            <div class="loading-overlay" id="loading-overlay">
-                                <div class="loading-spinner"></div>
-                            </div>
-                            
-                            <div class="grid-inner">
-                                <!-- Origin marker and label -->
-                                <div class="origin-marker"></div>
-                                <div class="origin-label">0</div>
-                                
-                                <!-- Axis names -->
-                                <div class="axis-name x-name">X</div>
-                                <div class="axis-name y-name">Y</div>
-                                
-                                <!-- Axis arrows -->
-                                <div class="x-arrow-right"></div>
-                                <div class="y-arrow-down"></div>
-                                
-                                <!-- Axis labels and ticks -->
-                                <div class="axis-labels x-labels" id="result-x-labels"></div>
-                                <div class="axis-labels y-labels" id="result-y-labels"></div>
-                                
-                                <!-- Grid -->
-                                <div class="grid" id="result-grid"></div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Target Grid -->
-                    <div class="grid-section">
-                        <div class="grid-title">TARGET GRID</div>
-                        <div class="grid-wrapper">
-                            <div class="grid-inner">
-                                <!-- Origin marker and label -->
-                                <div class="origin-marker"></div>
-                                <div class="origin-label">0</div>
-                                
-                                <!-- Axis names -->
-                                <div class="axis-name x-name">X</div>
-                                <div class="axis-name y-name">Y</div>
-                                
-                                <!-- Axis arrows -->
-                                <div class="x-arrow-right"></div>
-                                <div class="y-arrow-down"></div>
-                                
-                                <!-- Axis labels and ticks -->
-                                <div class="axis-labels x-labels" id="target-x-labels"></div>
-                                <div class="axis-labels y-labels" id="target-y-labels"></div>
-                                
-                                <!-- Grid -->
-                                <div class="grid" id="target-grid"></div>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Tasks Container -->
+                <div class="tasks-container" id="tasks-container">
+                    <!-- Task sections will be added here dynamically -->
+                </div>
+                
+                <!-- Loading overlay (now global) -->
+                <div class="loading-overlay" id="loading-overlay">
+                    <div class="loading-spinner"></div>
                 </div>
                 
                 <!-- Status indicator -->
@@ -1018,24 +1134,16 @@ class Line(BaseDrawer):
                 
                 <!-- Bottom panels container -->
                 <div class="bottom-panels">
-                    <!-- Comparison Results -->
+                    <!-- Code Stats -->
                     <div class="results-panel">
-                        <div class="results-header">COMPARISON RESULTS</div>
+                        <div class="results-header">CODE STATS</div>
                         <div class="results-content">
-                            <div class="results-row">
-                                <div class="results-label">Size Match</div>
-                                <div class="results-value" id="size-match">✓</div>
-                            </div>
-                            <div class="results-row">
-                                <div class="results-label">Cell Match %</div>
-                                <div class="results-value" id="match-percentage">0.00%</div>
-                            </div>
                             <div class="results-row">
                                 <div class="results-label">Code Length</div>
                                 <div class="results-value" id="code-length">0 tokens</div>
                             </div>
                             <div class="results-row results-footer">
-                                <div class="results-note">💡 Shorter code is better!</div>
+                                <div class="results-note">💡 Use the "Run Prediction" and "Run Transform" buttons for each task.</div>
                             </div>
                         </div>
                     </div>
@@ -1185,8 +1293,20 @@ class Line(BaseDrawer):
             const xLabels = document.getElementById(xLabelsId);
             const yLabels = document.getElementById(yLabelsId);
             
+            // Safety check if elements exist
+            if (!xLabels || !yLabels) {
+                console.error(`Axis label elements not found: ${xLabelsId}, ${yLabelsId}`);
+                return;
+            }
+            
             xLabels.innerHTML = '';
             yLabels.innerHTML = '';
+            
+            // Bail early if gridData is invalid
+            if (!gridData || !Array.isArray(gridData) || gridData.length === 0 || !Array.isArray(gridData[0])) {
+                console.error('Invalid grid data provided to createAxisLabels');
+                return;
+            }
             
             // Get the cell size in pixels based on grid dimensions
             const { size, margin } = getCellPixelSize(gridData);
@@ -1203,64 +1323,68 @@ class Line(BaseDrawer):
                 labelInterval = 5; // Show every fifth label for large grids
             }
             
-            // X-axis labels (starting from 1)
-            for (let x = 1; x < gridData[0].length; x++) {
-                const pixelPos = x * pixelStep;
-                
-                // Create tick mark for all positions
-                const tick = document.createElement('div');
-                tick.className = 'tick x-tick';
-                tick.style.left = `${pixelPos}px`;
-                xLabels.appendChild(tick);
-                
-                // Only create labels at intervals to avoid clutter
-                if (x % labelInterval === 0 || x === gridData[0].length - 1) {
-                    const label = document.createElement('div');
-                    label.className = 'x-label';
-                    label.textContent = x;
+            try {
+                // X-axis labels (starting from 1)
+                for (let x = 1; x < gridData[0].length; x++) {
+                    const pixelPos = x * pixelStep;
                     
-                    // Position the label along the x-axis
-                    label.style.left = `${pixelPos}px`;
+                    // Create tick mark for all positions
+                    const tick = document.createElement('div');
+                    tick.className = 'tick x-tick';
+                    tick.style.left = `${pixelPos}px`;
+                    xLabels.appendChild(tick);
                     
-                    // Adjust font size for larger grids
-                    if (maxDim > 20) {
-                        label.style.fontSize = '8px';
-                    } else if (maxDim > 10) {
-                        label.style.fontSize = '10px';
+                    // Only create labels at intervals to avoid clutter
+                    if (x % labelInterval === 0 || x === gridData[0].length - 1) {
+                        const label = document.createElement('div');
+                        label.className = 'x-label';
+                        label.textContent = x;
+                        
+                        // Position the label along the x-axis
+                        label.style.left = `${pixelPos}px`;
+                        
+                        // Adjust font size for larger grids
+                        if (maxDim > 20) {
+                            label.style.fontSize = '8px';
+                        } else if (maxDim > 10) {
+                            label.style.fontSize = '10px';
+                        }
+                        
+                        xLabels.appendChild(label);
                     }
-                    
-                    xLabels.appendChild(label);
                 }
-            }
-            
-            // Y-axis labels (starting from 1)
-            for (let y = 1; y < gridData.length; y++) {
-                const pixelPos = y * pixelStep;
                 
-                // Create tick mark for all positions
-                const tick = document.createElement('div');
-                tick.className = 'tick y-tick';
-                tick.style.top = `${pixelPos}px`;
-                yLabels.appendChild(tick);
-                
-                // Only create labels at intervals to avoid clutter
-                if (y % labelInterval === 0 || y === gridData.length - 1) {
-                    const label = document.createElement('div');
-                    label.className = 'y-label';
-                    label.textContent = y;
+                // Y-axis labels (starting from 1)
+                for (let y = 1; y < gridData.length; y++) {
+                    const pixelPos = y * pixelStep;
                     
-                    // Position the label along the y-axis
-                    label.style.top = `${pixelPos}px`;
+                    // Create tick mark for all positions
+                    const tick = document.createElement('div');
+                    tick.className = 'tick y-tick';
+                    tick.style.top = `${pixelPos}px`;
+                    yLabels.appendChild(tick);
                     
-                    // Adjust font size for larger grids
-                    if (maxDim > 20) {
-                        label.style.fontSize = '8px';
-                    } else if (maxDim > 10) {
-                        label.style.fontSize = '10px';
+                    // Only create labels at intervals to avoid clutter
+                    if (y % labelInterval === 0 || y === gridData.length - 1) {
+                        const label = document.createElement('div');
+                        label.className = 'y-label';
+                        label.textContent = y;
+                        
+                        // Position the label along the y-axis
+                        label.style.top = `${pixelPos}px`;
+                        
+                        // Adjust font size for larger grids
+                        if (maxDim > 20) {
+                            label.style.fontSize = '8px';
+                        } else if (maxDim > 10) {
+                            label.style.fontSize = '10px';
+                        }
+                        
+                        yLabels.appendChild(label);
                     }
-                    
-                    yLabels.appendChild(label);
                 }
+            } catch (error) {
+                console.error('Error creating axis labels:', error);
             }
         }
         
@@ -1284,109 +1408,154 @@ class Line(BaseDrawer):
         // Function to render a grid
         function renderGrid(gridData, containerId) {
             const container = document.getElementById(containerId);
+            if (!container) {
+                console.error(`Grid container not found: ${containerId}`);
+                return;
+            }
+            
+            // Bail early if gridData is invalid
+            if (!gridData || !Array.isArray(gridData) || gridData.length === 0 || !Array.isArray(gridData[0])) {
+                console.error('Invalid grid data provided to renderGrid');
+                return;
+            }
+            
             container.innerHTML = ''; // Clear previous content
             
-            // Get the appropriate cell size class
-            const cellSizeClass = getCellSizeClass(gridData);
-            
-            gridData.forEach((row, y) => {
-                const rowDiv = document.createElement('div');
-                rowDiv.className = 'grid-row';
+            try {
+                // Get the appropriate cell size class
+                const cellSizeClass = getCellSizeClass(gridData);
                 
-                row.forEach((cell, x) => {
-                    const cellDiv = document.createElement('div');
-                    cellDiv.className = `grid-cell ${cellSizeClass}`;
-                    cellDiv.style.backgroundColor = getColorFromValue(cell);
+                gridData.forEach((row, y) => {
+                    const rowDiv = document.createElement('div');
+                    rowDiv.className = 'grid-row';
                     
-                    // Use standard coordinates starting from (0,0)
-                    cellDiv.dataset.coords = `(${x},${y})`;
-                    cellDiv.dataset.value = cell;
+                    row.forEach((cell, x) => {
+                        const cellDiv = document.createElement('div');
+                        cellDiv.className = `grid-cell ${cellSizeClass}`;
+                        cellDiv.style.backgroundColor = getColorFromValue(cell);
+                        
+                        // Use standard coordinates starting from (0,0)
+                        cellDiv.dataset.coords = `(${x},${y})`;
+                        cellDiv.dataset.value = cell;
+                        
+                        rowDiv.appendChild(cellDiv);
+                    });
                     
-                    rowDiv.appendChild(cellDiv);
+                    container.appendChild(rowDiv);
                 });
                 
-                container.appendChild(rowDiv);
-            });
-            
-            // Update axis labels for the new grid size
-            const targetWrapper = container.closest('.grid-wrapper');
-            if (targetWrapper) {
-                adjustGridWrapperForSize(targetWrapper, gridData);
+                // Update axis labels for the new grid size
+                const targetWrapper = container.closest('.grid-wrapper');
+                if (targetWrapper) {
+                    adjustGridWrapperForSize(targetWrapper, gridData);
+                }
+            } catch (error) {
+                console.error('Error rendering grid:', error);
             }
         }
         
         // Function to adjust grid wrapper and axes for different grid sizes
         function adjustGridWrapperForSize(wrapper, gridData) {
-            const maxDim = Math.max(gridData.length, gridData[0].length);
-            
-            // Get the cell size based on grid dimensions
-            const { size } = getCellPixelSize(gridData);
-            
-            // For very small grids (3x3 to 5x5), we can use larger ticks
-            if (maxDim <= 5) {
-                wrapper.querySelectorAll('.x-tick, .y-tick').forEach(el => {
-                    if (el.classList.contains('x-tick')) {
-                        el.style.height = '6px';
-                    } else {
-                        el.style.width = '6px';
-                    }
-                });
+            if (!wrapper) {
+                console.error('Grid wrapper not provided to adjustGridWrapperForSize');
+                return;
             }
-            // For very large grids, reduce tick size
-            else if (maxDim > 20) {
-                wrapper.querySelectorAll('.x-tick, .y-tick').forEach(el => {
-                    if (el.classList.contains('x-tick')) {
-                        el.style.height = '3px';
-                    } else {
-                        el.style.width = '3px';
-                    }
-                });
+            
+            // Bail early if gridData is invalid
+            if (!gridData || !Array.isArray(gridData) || gridData.length === 0 || !Array.isArray(gridData[0])) {
+                console.error('Invalid grid data provided to adjustGridWrapperForSize');
+                return;
+            }
+            
+            try {
+                const maxDim = Math.max(gridData.length, gridData[0].length);
+                
+                // Get the cell size based on grid dimensions
+                const { size } = getCellPixelSize(gridData);
+                
+                // For very small grids (3x3 to 5x5), we can use larger ticks
+                if (maxDim <= 5) {
+                    wrapper.querySelectorAll('.x-tick, .y-tick').forEach(el => {
+                        if (el.classList.contains('x-tick')) {
+                            el.style.height = '6px';
+                        } else {
+                            el.style.width = '6px';
+                        }
+                    });
+                }
+                // For very large grids, reduce tick size
+                else if (maxDim > 20) {
+                    wrapper.querySelectorAll('.x-tick, .y-tick').forEach(el => {
+                        if (el.classList.contains('x-tick')) {
+                            el.style.height = '3px';
+                        } else {
+                            el.style.width = '3px';
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error adjusting grid wrapper:', error);
             }
         }
         
         // Function to render grid with slower pop animation
         function renderGridWithPopAnimation(gridData, containerId) {
             const container = document.getElementById(containerId);
-            container.innerHTML = ''; // Clear previous content
-            
-            // Get the appropriate cell size class
-            const cellSizeClass = getCellSizeClass(gridData);
-            
-            // First create all cells with their final colors but tiny size
-            gridData.forEach((row, y) => {
-                const rowDiv = document.createElement('div');
-                rowDiv.className = 'grid-row';
-                
-                row.forEach((cell, x) => {
-                    const cellDiv = document.createElement('div');
-                    cellDiv.className = `grid-cell ${cellSizeClass}`;
-                    cellDiv.style.backgroundColor = getColorFromValue(cell);
-                    cellDiv.style.transform = 'scale(0.05)'; // Start very small
-                    
-                    // Use standard coordinates starting from (0,0)
-                    cellDiv.dataset.coords = `(${x},${y})`;
-                    cellDiv.dataset.value = cell;
-                    
-                    rowDiv.appendChild(cellDiv);
-                });
-                
-                container.appendChild(rowDiv);
-            });
-            
-            // Update axis labels for the new grid size
-            const targetWrapper = container.closest('.grid-wrapper');
-            if (targetWrapper) {
-                adjustGridWrapperForSize(targetWrapper, gridData);
+            if (!container) {
+                console.error(`Grid container not found: ${containerId}`);
+                return;
             }
             
-            // Add a slight delay then make all cells pop at once
-            setTimeout(() => {
-                const cells = container.querySelectorAll('.grid-cell');
-                cells.forEach(cell => {
-                    cell.classList.add('pop-in');
-                    cell.style.transform = ''; // Remove inline transform to let animation work
+            // Bail early if gridData is invalid
+            if (!gridData || !Array.isArray(gridData) || gridData.length === 0 || !Array.isArray(gridData[0])) {
+                console.error('Invalid grid data provided to renderGridWithPopAnimation');
+                return;
+            }
+            
+            container.innerHTML = ''; // Clear previous content
+            
+            try {
+                // Get the appropriate cell size class
+                const cellSizeClass = getCellSizeClass(gridData);
+                
+                // First create all cells with their final colors but tiny size
+                gridData.forEach((row, y) => {
+                    const rowDiv = document.createElement('div');
+                    rowDiv.className = 'grid-row';
+                    
+                    row.forEach((cell, x) => {
+                        const cellDiv = document.createElement('div');
+                        cellDiv.className = `grid-cell ${cellSizeClass}`;
+                        cellDiv.style.backgroundColor = getColorFromValue(cell);
+                        cellDiv.style.transform = 'scale(0.05)'; // Start very small
+                        
+                        // Use standard coordinates starting from (0,0)
+                        cellDiv.dataset.coords = `(${x},${y})`;
+                        cellDiv.dataset.value = cell;
+                        
+                        rowDiv.appendChild(cellDiv);
+                    });
+                    
+                    container.appendChild(rowDiv);
                 });
-            }, 200); // Slightly longer delay before animation starts
+                
+                // Update axis labels for the new grid size
+                const targetWrapper = container.closest('.grid-wrapper');
+                if (targetWrapper) {
+                    adjustGridWrapperForSize(targetWrapper, gridData);
+                }
+                
+                // Add a slight delay then make all cells pop at once
+                setTimeout(() => {
+                    const cells = container.querySelectorAll('.grid-cell');
+                    cells.forEach(cell => {
+                        cell.classList.add('pop-in');
+                        cell.style.transform = ''; // Remove inline transform to let animation work
+                    });
+                }, 200); // Slightly longer delay before animation starts
+            } catch (error) {
+                console.error('Error rendering grid with animation:', error);
+            }
         }
         
         // We don't need this function anymore since we have a static color key
@@ -1428,41 +1597,7 @@ class Line(BaseDrawer):
             return (matches / total) * 100;
         }
         
-        // Update similarity score display
-        function updateSimilarityScore(userGrid) {
-            if (!currentTask || !userGrid) return;
-            
-            // Find the current task information from the task list
-            const taskId = document.getElementById('task-select').value;
-            const task = taskList.find(t => t.id === taskId);
-            if (!task) return;
-            
-            // Get the appropriate target grid based on task type
-            let targetGrid;
-            if (task.type.toLowerCase() === 'training' && currentTask.train && currentTask.train.length > 0) {
-                targetGrid = currentTask.train[0].input;
-            } else if (task.type.toLowerCase() === 'evaluation' && currentTask.test && currentTask.test.length > 0) {
-                targetGrid = currentTask.test[0].input;
-            } else {
-                return; // No valid target grid
-            }
-            
-            // Update the size match indicator
-            const sizeMatchElement = document.getElementById('size-match');
-            if (isSameDimensions(userGrid, targetGrid)) {
-                sizeMatchElement.textContent = "✓"; // Checkmark symbol
-                sizeMatchElement.style.color = "var(--button-color)"; // Green color
-            } else {
-                const userSize = `${userGrid.length}x${userGrid[0].length}`;
-                const targetSize = `${targetGrid.length}x${targetGrid[0].length}`;
-                sizeMatchElement.textContent = `✗ Got ${userSize}, need ${targetSize}`;
-                sizeMatchElement.style.color = "var(--pixel-red)"; // Red color
-            }
-            
-            // Calculate and update the match percentage
-            const score = calculateSimilarity(userGrid, targetGrid);
-            document.getElementById('match-percentage').textContent = `${score.toFixed(2)}%`;
-        }
+        // This functionality is now handled directly in the task comparison sections
         
         // Hard-coded list of evaluation and training files
         // In a real server environment, you would fetch this dynamically
@@ -1549,6 +1684,7 @@ class Line(BaseDrawer):
         // Load a specific task
         async function loadTask(taskId) {
             const debugOutput = document.getElementById('debug-output');
+            const tasksContainer = document.getElementById('tasks-container');
             debugOutput.textContent = `Loading task ${taskId}...`;
             
             try {
@@ -1565,50 +1701,319 @@ class Line(BaseDrawer):
                 const taskData = await response.json();
                 currentTask = taskData;
                 
-                // For both training and test tasks, we'll use the first input grid
+                // Clear previous task sections
+                tasksContainer.innerHTML = '';
+                
                 // Determine which collection to use based on task type
-                let grid;
-                if (task.type.toLowerCase() === 'training' && taskData.train && taskData.train.length > 0) {
-                    grid = taskData.train[0].input;
-                } else if (task.type.toLowerCase() === 'evaluation' && taskData.test && taskData.test.length > 0) {
-                    grid = taskData.test[0].input;
+                const isTraining = task.type.toLowerCase() === 'training';
+                
+                // Setup a default target grid
+                let targetGrid;
+                
+                // For training tasks, create task sections for all examples
+                if (isTraining && taskData.train && taskData.train.length > 0) {
+                    // Use first example's output as the target grid for comparison
+                    targetGrid = taskData.train[0].output;
+                    
+                    // Create a task section for each training example
+                    taskData.train.forEach((example, idx) => {
+                        const taskNumber = idx + 1;
+                        const { section, renderGrids } = createTaskSection(
+                            taskNumber, 
+                            example.input, 
+                            example.output, 
+                            true // isTraining
+                        );
+                        
+                        // Add the section to the DOM
+                        tasksContainer.appendChild(section);
+                        
+                        // Render the grids after the section is in the DOM
+                        renderGrids();
+                        
+                        // Add click handlers for the prediction and transform buttons
+                        setupButtonHandlers(taskNumber, example.input);
+                    });
+                } 
+                // For evaluation tasks, load all test examples (inputs only)
+                else if (!isTraining && taskData.test && taskData.test.length > 0) {
+                    // Use first example's output as target
+                    targetGrid = taskData.test[0].output;
+                    
+                    // Create a task section for each test example
+                    taskData.test.forEach((example, idx) => {
+                        const taskNumber = idx + 1;
+                        const { section, renderGrids } = createTaskSection(
+                            taskNumber, 
+                            example.input, 
+                            null, // No output shown for test examples
+                            false // Not a training task
+                        );
+                        
+                        // Add the section to the DOM
+                        tasksContainer.appendChild(section);
+                        
+                        // Render the grids after the section is in the DOM
+                        renderGrids();
+                        
+                        // Add click handlers for the prediction and transform buttons
+                        setupButtonHandlers(taskNumber, example.input);
+                    });
                 } else {
-                    throw new Error(`Task ${taskId} has no input examples`);
+                    throw new Error(`Task ${taskId} has no examples`);
                 }
                 
-                // Update axis labels and render grid
-                createAxisLabels(grid, 'target-x-labels', 'target-y-labels');
-                renderGrid(grid, 'target-grid');
+                // Make sure the tasks container is visible
+                tasksContainer.style.display = 'flex';
                 
-                // Initialize result grid with empty grid of same size
-                const emptyResultGrid = Array(grid.length).fill().map(() => Array(grid[0].length).fill(0));
-                createAxisLabels(emptyResultGrid, 'result-x-labels', 'result-y-labels');
-                renderGrid(emptyResultGrid, 'result-grid');
-                
-                // Reset match indicators
-                document.getElementById('match-percentage').textContent = "0.00%";
-                document.getElementById('size-match').textContent = "✓";
-                document.getElementById('size-match').style.color = "var(--button-color)";
-                document.getElementById('code-length').textContent = "0 tokens";
+                // Update code metrics - get current solution code
+                const currentCode = solutionEditor ? solutionEditor.getValue() : "";
+                document.getElementById('code-length').textContent = `${measureCodeLength(currentCode)} tokens`;
                 
                 // Update the debug output with task type info
-                debugOutput.textContent = `${task.type} task ${taskId} loaded. Try to create this grid with your code!`;
+                const taskCount = isTraining ? taskData.train.length : taskData.test.length;
+                debugOutput.textContent = `${task.type} task ${taskId} loaded with ${taskCount} examples. Use the Run Prediction button for each task.`;
             } catch (error) {
                 console.error('Error loading task:', error);
                 debugOutput.textContent = `Error loading task: ${error.message}`;
                 
-                // Fallback to a simple grid if task cannot be loaded
-                const fallbackGrid = [
-                    [0, 1, 0],
-                    [1, 0, 1],
-                    [0, 1, 0]
-                ];
-                createAxisLabels(fallbackGrid, 'target-x-labels', 'target-y-labels');
-                renderGrid(fallbackGrid, 'target-grid');
+                // Nothing to do here, just hide the tasks container
                 
-                // Empty result grid
-                createAxisLabels(fallbackGrid, 'result-x-labels', 'result-y-labels');
-                renderGrid(Array(3).fill().map(() => Array(3).fill(0)), 'result-grid');
+                // Hide tasks container
+                tasksContainer.style.display = 'none';
+            }
+        }
+        
+        // Set up button handlers for prediction and transform
+        function setupButtonHandlers(taskNumber, inputGrid) {
+            // The prediction button runs create_grid_N
+            const predictionButton = document.getElementById(`run-prediction-${taskNumber}`);
+            if (predictionButton) {
+                predictionButton.addEventListener('click', async () => {
+                    try {
+                        // First get and execute the current solution code
+                        const solutionCode = solutionEditor.getValue();
+                        const libraryCode = libraryEditor.getValue();
+                        
+                        // Make sure library is properly loaded
+                        pyodide.runPython(`
+                            # Create library.py module
+                            import sys
+                            from pathlib import Path
+                            
+                            # Create a virtual file for the library
+                            library_code = ${JSON.stringify(libraryCode)}
+                            
+                            # Create the library module
+                            spec = importlib.util.spec_from_loader('library', 
+                                                                  importlib.machinery.SourceFileLoader('library', 'library.py'))
+                            library = importlib.util.module_from_spec(spec)
+                            sys.modules['library'] = library
+                            
+                            # Execute the library code in the module's namespace
+                            exec(library_code, library.__dict__)
+                        `);
+                        
+                        // Execute the solution code to make all functions available
+                        pyodide.runPython(solutionCode);
+                        
+                        // Try to run the create_grid function for this task
+                        const funcName = `create_grid_${taskNumber}`;
+                        
+                        // Run the prediction function and get the grid data
+                        const predictedGrid = pyodide.runPython(`${funcName}().render()`).toJs();
+                        
+                        // Display the predicted grid
+                        const safeIndex = taskNumber.toString().replace(/[^a-zA-Z0-9-]/g, '-');
+                        createAxisLabels(predictedGrid, `predicted-input-x-${safeIndex}`, `predicted-input-y-${safeIndex}`);
+                        renderGridWithPopAnimation(predictedGrid, `predicted-input-grid-${safeIndex}`);
+                        
+                        // Store the input grid in a global variable for the transform button
+                        window[`inputGrid${taskNumber}`] = predictedGrid;
+                        
+                        // Enable the transform button once prediction has been run
+                        const transformButton = document.getElementById(`run-transform-${taskNumber}`);
+                        if (transformButton) {
+                            transformButton.disabled = false;
+                        }
+                        
+                        // Calculate similarity between predicted and actual input
+                        const matchPercent = calculateSimilarity(predictedGrid, inputGrid);
+                        
+                        // Add match percentage to button text
+                        predictionButton.textContent = `Prediction (${matchPercent.toFixed(1)}% match)`;
+                        
+                        // Color the button based on match percentage
+                        if (matchPercent > 95) {
+                            predictionButton.style.backgroundColor = 'var(--button-color)'; // Green
+                        } else if (matchPercent > 50) {
+                            predictionButton.style.backgroundColor = '#ffaa00'; // Orange
+                        } else {
+                            predictionButton.style.backgroundColor = '#ff5959'; // Red
+                        }
+                        
+                    } catch (error) {
+                        console.error(`Error running prediction for task ${taskNumber}:`, error);
+                        document.getElementById('debug-output').textContent = 
+                            `Error: ${error.message}. Make sure you've defined function create_grid_${taskNumber}() in your code.`;
+                    }
+                });
+            }
+            
+            // The transform button runs to_output on the predicted input
+            const transformButton = document.getElementById(`run-transform-${taskNumber}`);
+            if (transformButton) {
+                transformButton.addEventListener('click', async () => {
+                    try {
+                        // Make sure we have a predicted input grid
+                        const storedInputGrid = window[`inputGrid${taskNumber}`];
+                        if (!storedInputGrid) {
+                            throw new Error('Run the prediction first to generate input grid.');
+                        }
+                        
+                        // First get and execute the current solution code again
+                        // (in case it was modified since the prediction)
+                        const solutionCode = solutionEditor.getValue();
+                        const libraryCode = libraryEditor.getValue();
+                        
+                        // Make sure library is properly loaded
+                        pyodide.runPython(`
+                            # Create library.py module
+                            import sys
+                            from pathlib import Path
+                            
+                            # Create a virtual file for the library
+                            library_code = ${JSON.stringify(libraryCode)}
+                            
+                            # Create the library module
+                            spec = importlib.util.spec_from_loader('library', 
+                                                                  importlib.machinery.SourceFileLoader('library', 'library.py'))
+                            library = importlib.util.module_from_spec(spec)
+                            sys.modules['library'] = library
+                            
+                            # Execute the library code in the module's namespace
+                            exec(library_code, library.__dict__)
+                        `);
+                        
+                        // Execute the solution code to make all functions available
+                        pyodide.runPython(solutionCode);
+                        
+                        // Check that the to_output function exists
+                        const hasFunction = pyodide.runPython(`'to_output' in globals()`);
+                        
+                        if (!hasFunction) {
+                            throw new Error('Function to_output not defined in your code.');
+                        }
+                        
+                        // Convert the JavaScript grid to a Python grid
+                        const pyInputGrid = pyodide.runPython(`
+                            from library import Grid, V, Color
+                            
+                            # Convert JS array to Grid object
+                            def array_to_grid(data):
+                                if not data or len(data) == 0 or len(data[0]) == 0:
+                                    raise ValueError("Invalid grid data")
+                                
+                                height = len(data)
+                                width = len(data[0])
+                                
+                                # For simplicity, we'll use the first color as background
+                                bg_color = data[0][0]
+                                
+                                grid = Grid(
+                                    size=V(x=width, y=height),
+                                    color=bg_color,
+                                    layers=[]
+                                )
+                                
+                                # Add pixels that differ from background
+                                from library import Rectangle
+                                for y in range(height):
+                                    for x in range(width):
+                                        if data[y][x] != bg_color:
+                                            grid.layers.append(
+                                                Rectangle(
+                                                    top_left=V(x=x, y=y),
+                                                    bottom_right=V(x=x, y=y),
+                                                    color=data[y][x],
+                                                    fill=True
+                                                )
+                                            )
+                                
+                                return grid
+                            
+                            # Convert the input grid
+                            input_grid = array_to_grid(${JSON.stringify(storedInputGrid)})
+                            input_grid
+                        `);
+                        
+                        // Run the to_output function on the input grid
+                        const outputGrid = pyodide.runPython(`
+                            # Apply the to_output function to the grid
+                            result_grid = to_output(input_grid)
+                            
+                            # Render to get the 2D array
+                            result_grid.render()
+                        `).toJs();
+                        
+                        // Display the output grid
+                        const safeIndex = taskNumber.toString().replace(/[^a-zA-Z0-9-]/g, '-');
+                        createAxisLabels(outputGrid, `predicted-output-x-${safeIndex}`, `predicted-output-y-${safeIndex}`);
+                        renderGridWithPopAnimation(outputGrid, `predicted-output-grid-${safeIndex}`);
+                        
+                        // If this is a training task, calculate and show match percentage
+                        const isTraining = transformButton.dataset.isTraining === 'true';
+                        if (isTraining) {
+                            // Get the actual output grid
+                            const taskId = document.getElementById('task-select').value;
+                            const task = taskList.find(t => t.id === taskId);
+                            if (task && currentTask && currentTask.train && currentTask.train.length >= taskNumber) {
+                                const actualOutput = currentTask.train[taskNumber-1].output;
+                                
+                                // Calculate similarity 
+                                const matchPercent = calculateSimilarity(outputGrid, actualOutput);
+                                
+                                // Add match percentage to the transform button text
+                                transformButton.textContent = `Transform (${matchPercent.toFixed(1)}% match)`;
+                                
+                                // Color the button based on match percentage
+                                if (matchPercent > 95) {
+                                    transformButton.style.backgroundColor = 'var(--button-color)'; // Green
+                                } else if (matchPercent > 50) {
+                                    transformButton.style.backgroundColor = '#ffaa00'; // Orange
+                                } else {
+                                    transformButton.style.backgroundColor = '#ff5959'; // Red
+                                }
+                                
+                                // Update the debug output to indicate success or failure
+                                if (matchPercent === 100) {
+                                    document.getElementById('debug-output').textContent = 
+                                        `Perfect match for Task ${taskNumber}! Your transformation is correct.`;
+                                } else if (matchPercent > 90) {
+                                    document.getElementById('debug-output').textContent = 
+                                        `Almost perfect for Task ${taskNumber}! (${matchPercent.toFixed(1)}% match)`;
+                                } else if (matchPercent > 50) {
+                                    document.getElementById('debug-output').textContent = 
+                                        `Partial match for Task ${taskNumber}. (${matchPercent.toFixed(1)}% match)`;
+                                } else {
+                                    document.getElementById('debug-output').textContent = 
+                                        `Low match for Task ${taskNumber}. Try a different approach. (${matchPercent.toFixed(1)}% match)`;
+                                }
+                            }
+                        } else {
+                            // Flash the button to indicate success for eval tasks
+                            transformButton.style.backgroundColor = 'var(--button-active)';
+                            setTimeout(() => {
+                                transformButton.style.backgroundColor = '';
+                            }, 500);
+                        }
+                        
+                    } catch (error) {
+                        console.error(`Error running transform for task ${taskNumber}:`, error);
+                        document.getElementById('debug-output').textContent = 
+                            `Error: ${error.message}. Make sure you've defined to_output(grid) function in your code.`;
+                    }
+                });
             }
         }
         
@@ -1694,8 +2099,301 @@ class Line(BaseDrawer):
             }
         }
         
+        // Create a task section for input-output pairs
+        function createTaskSection(taskNumber, inputGrid, outputGrid, isTraining) {
+            // Create the containing section
+            const section = document.createElement('div');
+            section.className = 'task-section';
+            section.id = `task-section-${taskNumber}`;
+            
+            // Calculate grid stats for display
+            const inputSize = `${inputGrid.length}×${inputGrid[0].length}`;
+            const inputColors = countUniqueColors(inputGrid);
+            
+            // Create the header
+            const header = document.createElement('div');
+            header.className = 'task-header';
+            header.innerHTML = `
+                <div class="task-title">Task ${taskNumber}</div>
+                <div class="task-stats">
+                    <span class="task-size">Size: ${inputSize}</span>
+                    <span class="task-colors">Colors: ${inputColors}</span>
+                </div>
+            `;
+            
+            // Create content container (open by default for first task)
+            const content = document.createElement('div');
+            content.className = 'task-content';
+            if (taskNumber === 1) {
+                content.style.maxHeight = '1200px'; // Initial height for open state
+            } else {
+                content.classList.add('collapsed');
+            }
+            
+            // Generate unique IDs for all grids
+            const safeIndex = taskNumber.toString().replace(/[^a-zA-Z0-9-]/g, '-');
+            
+            // Input comparison (actual vs. prediction)
+            const inputComparison = document.createElement('div');
+            inputComparison.className = 'grid-comparison';
+            
+            // The "run prediction" button
+            const runPredictionButton = document.createElement('button');
+            runPredictionButton.type = 'button';
+            runPredictionButton.className = 'run-transform-button';
+            runPredictionButton.id = `run-prediction-${taskNumber}`;
+            runPredictionButton.textContent = 'Run Prediction';
+            runPredictionButton.dataset.taskNumber = taskNumber;
+            
+            // Actual input grid
+            const actualInputColumn = document.createElement('div');
+            actualInputColumn.className = 'grid-comparison-column';
+            actualInputColumn.innerHTML = `
+                <div class="grid-comparison-title">Actual Input</div>
+                <div class="grid-wrapper">
+                    <div class="grid-inner">
+                        <div class="origin-marker"></div>
+                        <div class="origin-label">0</div>
+                        <div class="axis-name x-name">X</div>
+                        <div class="axis-name y-name">Y</div>
+                        <div class="x-arrow-right"></div>
+                        <div class="y-arrow-down"></div>
+                        <div class="axis-labels x-labels" id="actual-input-x-${safeIndex}"></div>
+                        <div class="axis-labels y-labels" id="actual-input-y-${safeIndex}"></div>
+                        <div class="grid" id="actual-input-grid-${safeIndex}"></div>
+                    </div>
+                </div>
+            `;
+            
+            // Predicted input grid
+            const predictedInputColumn = document.createElement('div');
+            predictedInputColumn.className = 'grid-comparison-column';
+            predictedInputColumn.innerHTML = `
+                <div class="grid-comparison-title">Your Prediction</div>
+                <div class="grid-wrapper">
+                    <div class="grid-inner">
+                        <div class="origin-marker"></div>
+                        <div class="origin-label">0</div>
+                        <div class="axis-name x-name">X</div>
+                        <div class="axis-name y-name">Y</div>
+                        <div class="x-arrow-right"></div>
+                        <div class="y-arrow-down"></div>
+                        <div class="axis-labels x-labels" id="predicted-input-x-${safeIndex}"></div>
+                        <div class="axis-labels y-labels" id="predicted-input-y-${safeIndex}"></div>
+                        <div class="grid" id="predicted-input-grid-${safeIndex}"></div>
+                    </div>
+                </div>
+            `;
+            
+            // Create button container and add button
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.display = 'flex';
+            buttonContainer.style.justifyContent = 'center';
+            buttonContainer.style.width = '100%';
+            buttonContainer.style.margin = '10px 0';
+            buttonContainer.appendChild(runPredictionButton);
+            
+            // Assemble input comparison section
+            inputComparison.appendChild(actualInputColumn);
+            inputComparison.appendChild(predictedInputColumn);
+            
+            // Add input comparison to content
+            content.appendChild(inputComparison);
+            content.appendChild(buttonContainer);
+            
+            // Create output comparison section if this is a training task or we have output
+            if (isTraining && outputGrid) {
+                const outputComparison = document.createElement('div');
+                outputComparison.className = 'grid-comparison';
+                
+                // The "run transform" button
+                const runTransformButton = document.createElement('button');
+                runTransformButton.type = 'button';
+                runTransformButton.className = 'run-transform-button';
+                runTransformButton.id = `run-transform-${taskNumber}`;
+                runTransformButton.textContent = 'Run Transform';
+                runTransformButton.dataset.taskNumber = taskNumber;
+                runTransformButton.dataset.isTraining = isTraining.toString();
+                runTransformButton.disabled = true; // Initially disabled until input prediction is run
+                
+                // Actual output grid
+                const actualOutputColumn = document.createElement('div');
+                actualOutputColumn.className = 'grid-comparison-column';
+                actualOutputColumn.innerHTML = `
+                    <div class="grid-comparison-title">Actual Output</div>
+                    <div class="grid-wrapper">
+                        <div class="grid-inner">
+                            <div class="origin-marker"></div>
+                            <div class="origin-label">0</div>
+                            <div class="axis-name x-name">X</div>
+                            <div class="axis-name y-name">Y</div>
+                            <div class="x-arrow-right"></div>
+                            <div class="y-arrow-down"></div>
+                            <div class="axis-labels x-labels" id="actual-output-x-${safeIndex}"></div>
+                            <div class="axis-labels y-labels" id="actual-output-y-${safeIndex}"></div>
+                            <div class="grid" id="actual-output-grid-${safeIndex}"></div>
+                        </div>
+                    </div>
+                `;
+                
+                // Predicted output grid
+                const predictedOutputColumn = document.createElement('div');
+                predictedOutputColumn.className = 'grid-comparison-column';
+                predictedOutputColumn.innerHTML = `
+                    <div class="grid-comparison-title">Your Transform</div>
+                    <div class="grid-wrapper">
+                        <div class="grid-inner">
+                            <div class="origin-marker"></div>
+                            <div class="origin-label">0</div>
+                            <div class="axis-name x-name">X</div>
+                            <div class="axis-name y-name">Y</div>
+                            <div class="x-arrow-right"></div>
+                            <div class="y-arrow-down"></div>
+                            <div class="axis-labels x-labels" id="predicted-output-x-${safeIndex}"></div>
+                            <div class="axis-labels y-labels" id="predicted-output-y-${safeIndex}"></div>
+                            <div class="grid" id="predicted-output-grid-${safeIndex}"></div>
+                        </div>
+                    </div>
+                `;
+                
+                // Create button container and add transform button
+                const transformButtonContainer = document.createElement('div');
+                transformButtonContainer.style.display = 'flex';
+                transformButtonContainer.style.justifyContent = 'center';
+                transformButtonContainer.style.width = '100%';
+                transformButtonContainer.style.margin = '10px 0';
+                transformButtonContainer.appendChild(runTransformButton);
+                
+                // Assemble output comparison
+                outputComparison.appendChild(actualOutputColumn);
+                outputComparison.appendChild(predictedOutputColumn);
+                
+                // Add output comparison to content
+                content.appendChild(outputComparison);
+                content.appendChild(transformButtonContainer);
+            } else if (!isTraining) {
+                // For evaluation tasks, we still show the output prediction section
+                // but hide the actual output (since it's a test)
+                const outputComparison = document.createElement('div');
+                outputComparison.className = 'grid-comparison';
+                
+                // The "run transform" button
+                const runTransformButton = document.createElement('button');
+                runTransformButton.type = 'button';
+                runTransformButton.className = 'run-transform-button';
+                runTransformButton.id = `run-transform-${taskNumber}`;
+                runTransformButton.textContent = 'Run Transform';
+                runTransformButton.dataset.taskNumber = taskNumber;
+                runTransformButton.dataset.isTraining = isTraining.toString();
+                runTransformButton.disabled = true; // Initially disabled
+                
+                // Warning message
+                const warningMessage = document.createElement('div');
+                warningMessage.className = 'task-warning';
+                warningMessage.textContent = 'This is an evaluation task. The actual output is hidden. Run your transform to see your prediction.';
+                
+                // Spacer column (we don't show actual output in evaluation tasks)
+                const spacerColumn = document.createElement('div');
+                spacerColumn.className = 'grid-comparison-column';
+                spacerColumn.innerHTML = `
+                    <div class="grid-comparison-title">Evaluation Task</div>
+                    ${warningMessage.outerHTML}
+                `;
+                
+                // Predicted output grid
+                const predictedOutputColumn = document.createElement('div');
+                predictedOutputColumn.className = 'grid-comparison-column';
+                predictedOutputColumn.innerHTML = `
+                    <div class="grid-comparison-title">Your Transform</div>
+                    <div class="grid-wrapper">
+                        <div class="grid-inner">
+                            <div class="origin-marker"></div>
+                            <div class="origin-label">0</div>
+                            <div class="axis-name x-name">X</div>
+                            <div class="axis-name y-name">Y</div>
+                            <div class="x-arrow-right"></div>
+                            <div class="y-arrow-down"></div>
+                            <div class="axis-labels x-labels" id="predicted-output-x-${safeIndex}"></div>
+                            <div class="axis-labels y-labels" id="predicted-output-y-${safeIndex}"></div>
+                            <div class="grid" id="predicted-output-grid-${safeIndex}"></div>
+                        </div>
+                    </div>
+                `;
+                
+                // Create button container and add transform button
+                const transformButtonContainer = document.createElement('div');
+                transformButtonContainer.style.display = 'flex';
+                transformButtonContainer.style.justifyContent = 'center';
+                transformButtonContainer.style.width = '100%';
+                transformButtonContainer.style.margin = '10px 0';
+                transformButtonContainer.appendChild(runTransformButton);
+                
+                // Assemble output comparison
+                outputComparison.appendChild(spacerColumn);
+                outputComparison.appendChild(predictedOutputColumn);
+                
+                // Add output comparison to content
+                content.appendChild(outputComparison);
+                content.appendChild(transformButtonContainer);
+            }
+            
+            // Add toggle functionality
+            header.addEventListener('click', (e) => {
+                // Don't toggle if a button was clicked
+                if (e.target.tagName === 'BUTTON') return;
+                
+                const isCollapsed = content.classList.contains('collapsed');
+                if (isCollapsed) {
+                    content.classList.remove('collapsed');
+                    content.style.maxHeight = '1200px'; // Open state
+                } else {
+                    content.classList.add('collapsed');
+                    content.style.maxHeight = '0'; // Collapsed state
+                }
+            });
+            
+            // Assemble the task section
+            section.appendChild(header);
+            section.appendChild(content);
+            
+            // Return the section now
+            // We'll handle rendering after it's added to the DOM
+            return {
+                section,
+                renderGrids: () => {
+                    // Wait for next tick to ensure DOM elements are accessible
+                    setTimeout(() => {
+                        try {
+                            // Render actual input grid
+                            createAxisLabels(inputGrid, `actual-input-x-${safeIndex}`, `actual-input-y-${safeIndex}`);
+                            renderGrid(inputGrid, `actual-input-grid-${safeIndex}`);
+                            
+                            // Render actual output grid if available for training tasks
+                            if (isTraining && outputGrid) {
+                                createAxisLabels(outputGrid, `actual-output-x-${safeIndex}`, `actual-output-y-${safeIndex}`);
+                                renderGrid(outputGrid, `actual-output-grid-${safeIndex}`);
+                            }
+                        } catch (error) {
+                            console.error('Error rendering grids:', error);
+                        }
+                    }, 0);
+                }
+            };
+        }
+        
+        // Count unique colors in a grid
+        function countUniqueColors(gridData) {
+            const colorSet = new Set();
+            gridData.forEach(row => {
+                row.forEach(cell => {
+                    colorSet.add(cell);
+                });
+            });
+            return colorSet.size;
+        }
+        
         // Run the Python code
-        async function runPythonCode() {
+        async function runPythonCode(isInitialLoad = false) {
             if (!pyodide) {
                 await initializePyodide();
                 if (!pyodide) return; // Failed to initialize
@@ -1708,16 +2406,18 @@ class Line(BaseDrawer):
             const statusIndicator = document.getElementById('status-indicator');
             const debugOutput = document.getElementById('debug-output');
             
-            // Prevent multiple clicks
-            if (button.classList.contains('running')) {
+            // Prevent multiple clicks (skip if initial load)
+            if (!isInitialLoad && button.classList.contains('running')) {
                 return;
             }
             
-            // Show running state
-            button.classList.add('running');
-            loadingOverlay.classList.add('active');
-            statusIndicator.classList.add('active');
-            debugOutput.textContent = "Running Python code...";
+            // Show running state (skip if initial load)
+            if (!isInitialLoad) {
+                button.classList.add('running');
+                loadingOverlay.classList.add('active');
+                statusIndicator.classList.add('active');
+                debugOutput.textContent = "Running Python code...";
+            }
             
             try {
                 // Execute the library code first
@@ -1742,54 +2442,53 @@ class Line(BaseDrawer):
                 // Then execute the solution code
                 pyodide.runPython(solutionCode);
                 
-                // Call the create_grid function to get the Grid object
-                const gridObject = pyodide.runPython('create_grid()');
-                
-                // Call the render method to get the grid data
-                const gridData = pyodide.runPython('create_grid().render()').toJs();
-                
-                // Validate the grid data
-                if (!Array.isArray(gridData) || !gridData.length || !Array.isArray(gridData[0])) {
-                    throw new Error('Invalid grid format. Grid.render() must return a 2D list of integers.');
+                // Check if solution code has basic syntax errors
+                try {
+                    // Syntax check by analyzing AST (without executing code)
+                    pyodide.runPython(`
+                        import ast
+                        
+                        # Check syntax without executing
+                        try:
+                            ast.parse(${JSON.stringify(solutionCode)})
+                        except SyntaxError as e:
+                            raise SyntaxError(f"Syntax error in your code: {str(e)}")
+                    `);
+                    
+                    if (!isInitialLoad) {
+                        debugOutput.textContent = "Code looks good! Use the Run Prediction and Run Transform buttons for each task.";
+                    }
+                } catch (error) {
+                    console.error('Syntax error in code:', error);
+                    if (!isInitialLoad) {
+                        throw error;
+                    }
                 }
                 
-                // Check if all elements are numbers
-                let isValid = true;
-                gridData.forEach(row => {
-                    row.forEach(cell => {
-                        if (typeof cell !== 'number' || isNaN(cell) || cell < 0 || !Number.isInteger(cell)) {
-                            isValid = false;
-                        }
-                    });
-                });
-                
-                if (!isValid) {
-                    throw new Error('Grid must contain only non-negative integers.');
-                }
-                
-                // Update the grid visualization
-                createAxisLabels(gridData, 'result-x-labels', 'result-y-labels');
-                renderGridWithPopAnimation(gridData, 'result-grid');
-                
-                // Update similarity score
-                updateSimilarityScore(gridData);
+                // We no longer need to search for additional visualization grids
+                // All grid functions (create_grid_1, create_grid_2, etc.) are now handled 
+                // by the task-specific buttons in each task panel
                 
                 // Measure and update code length - only count the solution code, not the library
                 const solutionLength = measureCodeLength(solutionCode);
                 const libraryLength = measureCodeLength(libraryCode);
                 document.getElementById('code-length').textContent = `${solutionLength} tokens`;
                 
-                debugOutput.textContent = `Code executed successfully! Grid size: ${gridData.length}x${gridData[0].length}`;
+                debugOutput.textContent = "Code executed successfully! Use the Run Prediction and Run Transform buttons for each task.";
             } catch (error) {
                 console.error('Error running Python code:', error);
-                debugOutput.textContent = `Error: ${error.message}`;
+                if (!isInitialLoad) {
+                    debugOutput.textContent = `Error: ${error.message}`;
+                }
             } finally {
-                // Hide running state
-                setTimeout(() => {
-                    button.classList.remove('running');
-                    loadingOverlay.classList.remove('active');
-                    statusIndicator.classList.remove('active');
-                }, 800);
+                // Hide running state (only if not initial load)
+                if (!isInitialLoad) {
+                    setTimeout(() => {
+                        button.classList.remove('running');
+                        loadingOverlay.classList.remove('active');
+                        statusIndicator.classList.remove('active');
+                    }, 800);
+                }
             }
         }
         
@@ -1910,11 +2609,18 @@ class Line(BaseDrawer):
             await loadTaskList();
             
             // Initialize Pyodide in the background
-            initializePyodide();
+            await initializePyodide();
             
             // Add click handler for the run button
             const runButton = document.getElementById('run-button');
             runButton.addEventListener('click', runPythonCode);
+            
+            // Run the code once to check syntax and load functions
+            try {
+                await runPythonCode(true); // Pass true to indicate this is the initial load
+            } catch (e) {
+                console.log("Initial code execution failed, but that's okay - user can fix and run again.");
+            }
         }
         
         // Run initialization when DOM is loaded
